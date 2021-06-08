@@ -37,7 +37,7 @@ class DefaultLoggerImpl : public Logger {
   }
 
   void logf(LogLevel level, const char *format, ...) override {
-    static char* LEVEL_TEXT[] = {
+    static const char* LEVEL_TEXT[] = {
         "TRACE", // kLogTrace
         "DEBUG", // kLogDebug
         "INFO ", // kLogInfo
