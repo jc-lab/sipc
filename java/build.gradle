@@ -19,8 +19,32 @@ plugins {
 
 apply plugin: 'com.google.protobuf'
 
+def getVersionFromGit = { ->
+    try {
+        def tagName = System.getenv('CI_COMMIT_TAG')
+        if (tagName == null) {
+            def stdout = new ByteArrayOutputStream()
+            exec {
+                commandLine 'git', 'describe', '--tags'
+                standardOutput = stdout
+                standardError = null
+            }
+            tagName = stdout.toString().split("\n")[0].trim()
+        }
+        if (tagName.startsWith("v")) return tagName.substring(1);
+        else return tagName;
+    } catch (Exception e) {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', 'HEAD'
+            standardOutput = stdout
+        }
+        return stdout.toString().split("\n")[0].trim()
+    }
+}
+
 group 'kr.jclab.sipc'
-version '0.0.1'
+version "${getVersionFromGit}"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -137,6 +161,10 @@ artifacts {
 signing {
     useGpgCmd()
     sign configurations.archives
+}
+
+tasks.withType(Sign) {
+    onlyIf { "${getVersionFromGit()}".startsWith("v") && project.hasProperty('signing.keyId') }
 }
 
 uploadArchives {
