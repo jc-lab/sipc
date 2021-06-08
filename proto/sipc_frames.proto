@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package jcu.sipc.proto;
+option java_package = "kr.jclab.sipc.common.proto";
+option java_outer_classname = "Frames";
+
+import "google/protobuf/any.proto";
+
+message AlertFrame {
+  int32 version = 1;
+  int32 type = 10;
+  string message = 11;
+}
+
+message ClientHelloFrame {
+  int32 version = 1;
+  string channel_id = 2;
+  bytes ephemeral_public_key = 10;
+  bytes client_nonce = 11;
+}
+
+message ServerHelloFrame {
+  int32 version = 1;
+  bytes server_nonce = 10;
+  EncryptedWrappedData encrypted_data = 11;
+}
+
+message ServerHelloEncrpytedData {
+  int32 version = 1;
+}
+
+message EncryptedWrappedData {
+  int32 version = 1;
+  bytes cipher_text = 10;
+  bytes auth_tag = 11;
+}
+
+message WrappedData {
+  int32 version = 1;
+  google.protobuf.Any message = 10;
+}
+
+message GrpcRequest {
+  string stream_id = 1;
+  string method_name = 11;
+  GrpcMetadata headers = 12;
+}
+
+message GrpcHeaders {
+  string stream_id = 1;
+  GrpcMetadata headers = 11;
+}
+
+message GrpcMetadata {
+  int32 size = 11;
+  repeated bytes data = 12;
+}
+
+message GrpcMessage {
+  string stream_id = 1;
+  bytes message = 2;
+}
+
+message GrpcHalfClose {
+  string stream_id = 1;
+}
+
+message GrpcComplete {
+  string stream_id = 1;
+
+  int32 status = 11;
+  GrpcMetadata trailers = 12;
+}
+
+message EventRequest {
+  string stream_id = 1;
+  string method_name = 11;
+  bytes  data = 12;
+}
+
+message EventProgress {
+  string stream_id = 1;
+  bytes  data = 11;
+}
+
+enum EventStatus {
+  OK = 0;
+  CANCELLED = 1;
+  METHOD_NOT_EXIST = 2;
+}
+
+message EventComplete {
+  string stream_id = 1;
+  EventStatus status = 2;
+  bytes  data = 11;
+}

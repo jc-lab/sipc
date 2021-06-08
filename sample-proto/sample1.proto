@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package kr.jclab.sipc.sample;
+option java_package = "kr.jclab.sipc.sample.proto";
+option java_outer_classname = "Sample1Messages";
+
+import "google/protobuf/any.proto";
+
+message SampleRequest {
+  string user_id = 1;
+  string message = 2;
+}
+
+message SampleResponse {
+  string message = 1;
+}
+
+message SampleProgress {
+  string message = 1;
+}
+
+message DownloadRequest {
+  string user_id = 1;
+}
+
+message UploadResponse {
+  string user_id = 1;
+  string message = 2;
+}
+
+message FilePart {
+  string message = 1;
+}
+
+service SampleService {
+  rpc sampleCall(SampleRequest) returns (SampleResponse) {}
+  rpc download(DownloadRequest) returns (stream FilePart) {}
+  rpc upload(stream FilePart) returns (UploadResponse) {}
+}
