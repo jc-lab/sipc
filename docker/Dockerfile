@@ -13,7 +13,7 @@ ADD [ ".", "/work/src" ]
 
 RUN mkdir -p /work/build-cpp && \
     cd /work/build-cpp && \
-    cmake /work/src
+    cmake /work/src/cpp
 
 WORKDIR /work/build-cpp
 RUN cmake --build . --config RelWithDebInfo
