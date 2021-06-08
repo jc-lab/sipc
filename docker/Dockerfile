@@ -11,7 +11,8 @@ RUN apt-get update -y && \
 RUN mkdir -p /work/src
 ADD [ ".", "/work/src" ]
 
-RUN mkdir -p /work/build-cpp && \
+RUN ls -al /work/src && \
+    mkdir -p /work/build-cpp && \
     cd /work/build-cpp && \
     cmake /work/src/cpp
 

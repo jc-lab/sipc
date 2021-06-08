@@ -4,6 +4,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Set Environment Variables
+        run: |
+          echo "runner_arch=$(uname -m)" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Context for Buildx
@@ -14,5 +17,22 @@ jobs:
         with:
           version: latest
           endpoint: builders
-      - run: docker build --tag=temp . -f docker/Dockerfile
+      - name: Cache Docker Layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: "${{ runner.os }}-${{ env.runner_arch }}-buildx-${{ github.sha }}"
+          restore-keys: "${{ runner.os }}-buildx-"
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: false
+          tags: local/temp:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,src=/tmp/.buildx-cache
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
