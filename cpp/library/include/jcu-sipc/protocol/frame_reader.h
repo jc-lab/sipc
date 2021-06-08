@@ -1,9 +1,15 @@
-//
-// Created by jichan on 2021-06-06.
-//
+/**
+ * @file	frame_reader.h
+ * @author	Joseph Lee <joseph@jc-lab.net>
+ * @date	2021-06-06
+ * @copyright Copyright (C) 2021 jc-lab.
+ *            This software may be modified and distributed under the terms
+ *            of the Apache License 2.0.  See the LICENSE file for details.
+ */
 
-#ifndef JCU_SIPC_CPP_LIBRARY_INCLUDE_JCU_SIPC_PROTOCOL_PROTOCOL_HEADER_H_
-#define JCU_SIPC_CPP_LIBRARY_INCLUDE_JCU_SIPC_PROTOCOL_PROTOCOL_HEADER_H_
+
+#ifndef JCU_SIPC_TRANSPORT_PROTOCOL_FRAME_READER_H_
+#define JCU_SIPC_TRANSPORT_PROTOCOL_FRAME_READER_H_
 
 #include <stdint.h>
 #include <vector>

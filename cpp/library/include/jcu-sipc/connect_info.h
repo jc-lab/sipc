@@ -1,9 +1,15 @@
-//
-// Created by jichan on 2021-06-03.
-//
+/**
+ * @file	connect_info.h
+ * @author	Joseph Lee <joseph@jc-lab.net>
+ * @date	2021-06-03
+ * @copyright Copyright (C) 2021 jc-lab.
+ *            This software may be modified and distributed under the terms
+ *            of the Apache License 2.0.  See the LICENSE file for details.
+ */
 
-#ifndef JCU_SIPC_SERVER_CONNECT_INFO_H_
-#define JCU_SIPC_SERVER_CONNECT_INFO_H_
+
+#ifndef JCU_SIPC_CONNECT_INFO_H_
+#define JCU_SIPC_CONNECT_INFO_H_
 
 #include <string>
 #include <vector>
@@ -74,4 +80,4 @@ std::unique_ptr<ConnectInfo> parseConnectInfo(const std::string &text);
 } // namespace sipc
 } // namespace jcu
 
-#endif //JCU_SIPC_CPP_LIBRARY_SRC_INTL_CONNECT_INFO_H_
+#endif //JCU_SIPC_CONNECT_INFO_H_

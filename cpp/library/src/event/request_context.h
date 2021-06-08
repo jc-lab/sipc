@@ -1,6 +1,12 @@
-//
-// Created by jichan on 2021-06-07.
-//
+/**
+ * @file	request_context.h
+ * @author	Joseph Lee <joseph@jc-lab.net>
+ * @date	2021-06-07
+ * @copyright Copyright (C) 2021 jc-lab.
+ *            This software may be modified and distributed under the terms
+ *            of the Apache License 2.0.  See the LICENSE file for details.
+ */
+
 
 #ifndef JCU_SIPC_CPP_LIBRARY_SRC_EVENT_REQUEST_CONTEXT_H_
 #define JCU_SIPC_CPP_LIBRARY_SRC_EVENT_REQUEST_CONTEXT_H_

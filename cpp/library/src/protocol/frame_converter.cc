@@ -1,6 +1,12 @@
-//
-// Created by jichan on 2021-06-06.
-//
+/**
+ * @file	frame_converter.cc
+ * @author	Joseph Lee <joseph@jc-lab.net>
+ * @date	2021-06-06
+ * @copyright Copyright (C) 2021 jc-lab.
+ *            This software may be modified and distributed under the terms
+ *            of the Apache License 2.0.  See the LICENSE file for details.
+ */
+
 
 #include <jcu-sipc/proto/sipc_frames.pb.h>
 #include <jcu-sipc/protocol/frame_converter.h>
