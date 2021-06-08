@@ -15,6 +15,8 @@ import kr.jclab.javautils.sipc.grpc.MiddleGrpcChannel;
 import kr.jclab.javautils.sipc.handler.DoneHandler;
 import kr.jclab.javautils.sipc.handler.HandshakeHandler;
 
+import java.awt.image.ImagingOpException;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -107,6 +109,9 @@ public abstract class SipcHost {
     }
 
     protected void feedError(Throwable e) {
+        if (!this.handshakeFuture.isDone()) {
+            this.handshakeFuture.completeExceptionally(e);
+        }
         this.doneFuture.completeExceptionally(e);
         this.executor.execute(() -> {
             if (this.doneHandler != null) {
@@ -116,6 +121,9 @@ public abstract class SipcHost {
     }
 
     protected void feedDone() {
+        if (!this.handshakeFuture.isDone()) {
+            this.handshakeFuture.completeExceptionally(new IOException("The process died early"));
+        }
         this.doneFuture.complete(null);
         this.executor.execute(() -> {
             if (this.doneHandler != null) {

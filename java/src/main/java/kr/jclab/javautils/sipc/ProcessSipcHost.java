@@ -5,6 +5,8 @@ import kr.jclab.javautils.sipc.crypto.CryptoException;
 import kr.jclab.javautils.sipc.crypto.DefaultEphemeralKeyAlgorithmsFactory;
 import kr.jclab.javautils.sipc.crypto.EphemeralKeyAlgorithmFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.Executor;
 
 public class ProcessSipcHost extends SipcHost {
@@ -20,7 +22,19 @@ public class ProcessSipcHost extends SipcHost {
 
     public void attachProcess(Process process) {
         this.process = process;
+        this.ioThread.start();
     }
+
+    private final Thread ioThread = new Thread(() -> {
+        try {
+            while (this.process.isAlive()) {
+                Thread.sleep(1000);
+            }
+            this.feedDone();
+        } catch (InterruptedException e) {
+            this.feedError(e);
+        }
+    });
 
     public static Builder builder(ChannelHost channelHost) {
         return new Builder(channelHost);

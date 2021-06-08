@@ -40,7 +40,6 @@ public abstract class ClientContext {
         do {
             hasNextPacket = false;
             int availableLength = this.receivingBuffer.position();
-            System.out.println("availableLength = " + availableLength);
             if (availableLength >= 4) {
                 int frameSize = FrameConverter.toInt24(this.receivingBuffer.getInt(0));
                 if (availableLength >= frameSize) {
@@ -58,7 +57,6 @@ public abstract class ClientContext {
                     }
                 }
             }
-            System.out.println("hasNextPacket = " + hasNextPacket);
         } while(hasNextPacket);
     }
 

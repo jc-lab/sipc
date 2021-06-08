@@ -2,7 +2,6 @@ package kr.jclab.javautils.sipc;
 
 import kr.jclab.javautils.sipc.channel.ClientContext;
 import kr.jclab.javautils.sipc.channel.stdio.StdioChannelHost;
-import kr.jclab.javautils.sipc.channel.stdio.StdioIpcChannel;
 import kr.jclab.javautils.sipc.crypto.CryptoException;
 import kr.jclab.javautils.sipc.crypto.DefaultEphemeralKeyAlgorithmsFactory;
 import kr.jclab.javautils.sipc.crypto.EphemeralKeyAlgorithmFactory;
@@ -34,7 +33,7 @@ public class ProcessStdioSipcHost extends ProcessSipcHost {
 
         try {
             boolean tick = false;
-            while (this.process.isAlive()) {
+            while (this.process.isAlive() || true) {
                 boolean processed = false;
                 int readLength;
 
@@ -63,8 +62,9 @@ public class ProcessStdioSipcHost extends ProcessSipcHost {
 
                 tick = !tick;
             }
+            this.feedDone();
         } catch (IOException e) {
-            e.printStackTrace();
+            this.feedError(e);
         }
     });
 
