@@ -36,12 +36,16 @@ int Stdio::start(const ConnectInfo *connect_info) {
 
   if (pipe_stdout_) {
     pipe_stdout_->on<uvw::ErrorEvent>([self](const uvw::ErrorEvent &evt, auto &handle) -> void {
-      self->onError(evt);
+      if (self->out_error_ignore_.fetch_and(0) == 0) {
+        self->onError(evt);
+      }
     });
     pipe_stdout_->open(uvw::StdOUT);
   } else if (tty_stdout_) {
     tty_stdout_->on<uvw::ErrorEvent>([self](const uvw::ErrorEvent &evt, auto &handle) -> void {
-      self->onError(evt);
+      if (self->out_error_ignore_.fetch_and(0) == 0) {
+        self->onError(evt);
+      }
     });
   }
 
@@ -87,7 +91,7 @@ void Stdio::write(std::unique_ptr<char[]> data, unsigned int length, const Write
     if (rc > 0) {
       uvw::ErrorEvent error_event{0};
       write_handler(false, error_event);
-    } else if (rc == UV_EAGAIN) {
+    } else {
       current_write_handler_ = write_handler;
       pipe_stdout_->once<uvw::WriteEvent>([self, write_handler](uvw::WriteEvent &evt, auto &handle) -> void {
         uvw::ErrorEvent error_event{0};
@@ -95,9 +99,6 @@ void Stdio::write(std::unique_ptr<char[]> data, unsigned int length, const Write
         write_handler(false, error_event);
       });
       pipe_stdout_->write(std::move(data), length);
-    } else {
-      uvw::ErrorEvent error_event{rc};
-      write_handler(false, error_event);
     }
   } else if (tty_stdout_) {
     out_error_ignore_.store(1);
@@ -106,7 +107,7 @@ void Stdio::write(std::unique_ptr<char[]> data, unsigned int length, const Write
     if (rc > 0) {
       uvw::ErrorEvent error_event{0};
       write_handler(true, error_event);
-    } else if (rc == UV_EAGAIN) {
+    } else {
       current_write_handler_ = write_handler;
       tty_stdout_->once<uvw::WriteEvent>([self, write_handler](uvw::WriteEvent &evt, auto &handle) -> void {
         uvw::ErrorEvent error_event{0};
@@ -114,10 +115,9 @@ void Stdio::write(std::unique_ptr<char[]> data, unsigned int length, const Write
         write_handler(false, error_event);
       });
       tty_stdout_->write(std::move(data), length);
-    } else {
-      uvw::ErrorEvent error_event{rc};
-      write_handler(true, error_event);
     }
+  } else {
+    fprintf(stderr, "NO STDOUT INTERFACE!\n");
   }
 }
 

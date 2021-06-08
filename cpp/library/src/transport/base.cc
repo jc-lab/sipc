@@ -124,7 +124,6 @@ void Base::setFrameHandlers(std::weak_ptr<protocol::FrameHandlers> frame_handler
 }
 
 void Base::sendFrame(::google::protobuf::Message *message, const WriteHandler_t &done_handler) {
-  //TODO: NEED QUEUE!!
   std::shared_ptr<Base> self(getSelf());
 
   int message_size = message->ByteSizeLong();

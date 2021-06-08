@@ -70,12 +70,10 @@ void Tcp::write(std::unique_ptr<char[]> data, unsigned int length, const WriteHa
   int rc = handle_->tryWrite(data.get(), length);
   self->error_ignore_.store(0);
 
-//  fprintf(stderr, "WRITE OK %d\n", length);
-
   if (rc > 0) {
     uvw::ErrorEvent error_event{0};
     write_handler(false, error_event);
-  }else if (rc == UV_EAGAIN) {
+  } else {
     self->current_write_handler_ = write_handler;
     handle_->once<uvw::WriteEvent>([self, write_handler, length](uvw::WriteEvent &evt, auto &handle) -> void {
       uvw::ErrorEvent error_event{0};
@@ -83,9 +81,6 @@ void Tcp::write(std::unique_ptr<char[]> data, unsigned int length, const WriteHa
       write_handler(false, error_event);
     });
     handle_->write(std::move(data), length);
-  } else {
-    uvw::ErrorEvent error_event{rc};
-    write_handler(true, error_event);
   }
 }
 
