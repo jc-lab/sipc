@@ -1,7 +1,10 @@
 name: test
 on: [push, pull_request]
 jobs:
-  build:
+  java-build:
+    runs-on: ubuntu-latest
+    
+  cpp-build:
     runs-on: ubuntu-latest
     steps:
       - name: Set Environment Variables

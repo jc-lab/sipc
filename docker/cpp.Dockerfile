@@ -1,5 +1,4 @@
 FROM ubuntu:20.04
-MAINTAINER Joseph Lee <joseph@jc-lab.net>
 
 ARG DEBIAN_FRONTEND=noninteractive
 
