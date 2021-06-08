@@ -20,7 +20,7 @@ ExternalProject_Add(
         "-Dprotobuf_WITH_ZLIB=OFF"
         "-Dprotobuf_BUILD_TESTS=OFF"
         "-Dprotobuf_MSVC_STATIC_RUNTIME=${JCU_SIPC_MSVC_STATIC_RUNTIME}"
-        WORKING_DIRECTORY <BUILD_DIR>
+        WORKING_DIRECTORY <BINARY_DIR>
         COMMAND       ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
         COMMAND       ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete"
 
