@@ -52,4 +52,5 @@ if (MSVC AND JCU_SIPC_MSVC_STATIC_RUNTIME)
 endif ()
 
 add_subdirectory(library)
-#add_subdirectory(sample)
+#add_subdirectory(test)
+add_subdirectory(sample)

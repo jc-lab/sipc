@@ -11,8 +11,6 @@
 
 using namespace kr::jclab::sipc::sample;
 
-extern "C" const char* test_connect_info;
-
 #include <future>
 
 int main() {
@@ -24,8 +22,8 @@ int main() {
   ipc->registerTransport(jcu::sipc::transport::Stdio::create(loop));
   ipc->registerTransport(jcu::sipc::transport::Tcp::create(loop));
   ipc->connect(
-      test_connect_info
-      );
+      getenv("SIPC_CONNECT_INFO")
+  );
 
   ipc->onRequest<SampleRequest>("client_side_hello", [ipc](std::shared_ptr<jcu::sipc::CalleeRequestContext<SampleRequest>> ctx) -> void {
     // Run in worker thread
