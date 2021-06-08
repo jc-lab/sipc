@@ -10,11 +10,12 @@ RUN apt-get update -y && \
 RUN mkdir -p /work/src
 ADD [ ".", "/work/src" ]
 
+ARG CMAKE_BUILD_TYPE=RelWithDebInfo
+
 RUN ls -al /work/src && \
     mkdir -p /work/build-cpp && \
     cd /work/build-cpp && \
-    cmake /work/src/cpp
+    cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} /work/src/cpp
 
 WORKDIR /work/build-cpp
-RUN cmake --build . --config RelWithDebInfo
-
+RUN cmake --build . --config ${CMAKE_BUILD_TYPE}

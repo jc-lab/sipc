@@ -1,5 +1,5 @@
 find_package(Protobuf REQUIRED)
-find_package(absl REQUIRED)
+#find_package(absl REQUIRED)
 #find_package(gRPC REQUIRED)
 
 set(mbedcrypto_target "${MBEDTLS_TARGET_PREFIX}mbedcrypto")
