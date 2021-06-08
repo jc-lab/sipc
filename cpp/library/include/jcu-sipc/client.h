@@ -13,7 +13,7 @@
 
 #include <uvw/loop.h>
 
-#include <grpcpp/impl/codegen/channel_interface.h>
+//#include <grpcpp/impl/codegen/channel_interface.h>
 
 #include "log.h"
 #include "crypto/crypto_base.h"
