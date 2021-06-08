@@ -2,13 +2,15 @@
 // Created by jichan on 2021-03-08.
 //
 
+#include <cstring>
+#include <stdio.h>
 #include <time.h>
 #include <jcu-sipc/log.h>
 
 #ifdef _MSC_VER
-#define SYSTEM_GMTIME_S gmtime_s
+#define SYSTEM_GMTIME_S(a, b) gmtime_s(a, b)
 #else
-#define SYSTEM_GMTIME_S gmtime_r
+#define SYSTEM_GMTIME_S(a, b) gmtime_r(b, a)
 #endif
 
 #define LOGF_BUFFER_REMAINING (buf.size() - buf_position)
@@ -40,7 +42,7 @@ class DefaultLoggerImpl : public Logger {
     std::va_list arg_list;
     time_t now_ts = time(nullptr);
     tm now_tm;
-    std::vector<char> buf(strlen(format) + 4096);
+    std::vector<char> buf(std::strlen(format) + 4096);
     char* buf_ptr = buf.data();
     size_t buf_position = 0;
 
