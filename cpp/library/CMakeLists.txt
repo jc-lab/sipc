@@ -78,6 +78,12 @@ if (WIN32)
             iphlpapi
             userenv
     )
+else()
+    target_link_libraries(
+            ${jcu_sipc_target}
+            PUBLIC
+            pthread dl
+    )
 endif ()
 target_include_directories(
         ${jcu_sipc_target}
