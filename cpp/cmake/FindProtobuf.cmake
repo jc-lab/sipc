@@ -1,7 +1,6 @@
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 
 set(Protobuf_FOUND TRUE)
-set(Protobuf_LIBRARIES libprotobuf)
 set(Protobuf_IMPORT_DIRS ${THIRDPARTIES_OUTPUT_DIR}/include)
 
 # Backwards compatibility

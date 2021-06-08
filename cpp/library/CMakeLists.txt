@@ -59,6 +59,14 @@ set(GENERATED_PROTOC_DIR ${CMAKE_CURRENT_BINARY_DIR}/include/jcu-sipc/proto/)
 make_directory(${GENERATED_PROTOC_DIR})
 
 add_library(${jcu_sipc_target} STATIC ${ALL_SRC_FILES})
+add_dependencies(
+        ${jcu_sipc_target}
+        googletest_project
+        mbedtls_project
+        uv_project
+        uvw_project
+        protobuf_project
+)
 target_link_libraries(
         ${jcu_sipc_target}
         PUBLIC
