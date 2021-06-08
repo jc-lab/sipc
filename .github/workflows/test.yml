@@ -22,7 +22,7 @@ jobs:
         with:
           path: /tmp/.buildx-cache
           key: "${{ runner.os }}-${{ env.runner_arch }}-buildx-java-${{ github.sha }}"
-          restore-keys: "${{ runner.os }}-buildx-java-"
+          restore-keys: "${{ runner.os }}-${{ env.runner_arch }}-buildx-java-"
       - name: Build
         uses: docker/build-push-action@v2
         with:
@@ -57,7 +57,7 @@ jobs:
         with:
           path: /tmp/.buildx-cache
           key: "${{ runner.os }}-${{ env.runner_arch }}-buildx-cpp-${{ github.sha }}"
-          restore-keys: "${{ runner.os }}-buildx-cpp-"
+          restore-keys: "${{ runner.os }}-${{ env.runner_arch }}-buildx-cpp-"
       - name: Build
         uses: docker/build-push-action@v2
         with:
