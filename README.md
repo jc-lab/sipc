@@ -2,6 +2,8 @@
 
 Secure IPC
 
+* Encrypted communication through ECDH by passing Host's PublicKey through Environment or Cmdline.
+
 * It works with asynchronous IO through libuv, and uvw is used for C++.
 
 # Usage
