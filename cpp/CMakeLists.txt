@@ -8,6 +8,8 @@ set(JCU_SIPC_MSVC_STATIC_RUNTIME OFF CACHE BOOL "jcu-sipc msvc static runtime")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(cmake/common.cmake)
 
+make_directory("${THIRDPARTIES_OUTPUT_DIR}/include")
+
 set(PROJECT_COMMON_FLAGS_DEBUG "")
 set(PROJECT_COMMON_FLAGS_RELEASE "")
 if (MSVC)
