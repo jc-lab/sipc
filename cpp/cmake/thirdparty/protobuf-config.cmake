@@ -1,18 +1,11 @@
-message("FIRST Protobuf_IMPORT_DIRS = ${Protobuf_IMPORT_DIRS}")
 # User options
 include("${CMAKE_CURRENT_LIST_DIR}/protobuf-options.cmake")
-
-message("FIRST Protobuf_IMPORT_DIRS 2 = ${Protobuf_IMPORT_DIRS}")
-
 
 # Depend packages
 
 
 # Imported targets
 include("${CMAKE_CURRENT_LIST_DIR}/protobuf-targets.cmake")
-
-message("FIRST Protobuf_IMPORT_DIRS 3 = ${Protobuf_IMPORT_DIRS}")
-
 
 function(protobuf_generate)
   message("In function : ${Protobuf_IMPORT_DIRS}")
