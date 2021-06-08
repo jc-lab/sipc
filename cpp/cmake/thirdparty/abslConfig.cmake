@@ -12,9 +12,9 @@ set(PACKAGE_PREFIX_DIR "${THIRDPARTIES_OUTPUT_DIR}")
 
 macro(set_and_check _var _file)
   set(${_var} "${_file}")
-  if(NOT EXISTS "${_file}")
-    message(FATAL_ERROR "File or directory ${_file} referenced by variable ${_var} does not exist !")
-  endif()
+#  if(NOT EXISTS "${_file}")
+#    message(FATAL_ERROR "File or directory ${_file} referenced by variable ${_var} does not exist !")
+#  endif()
 endmacro()
 
 macro(check_required_components _NAME)
