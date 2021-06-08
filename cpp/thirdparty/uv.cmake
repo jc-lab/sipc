@@ -8,7 +8,17 @@ ExternalProject_Add(
         GIT_REPOSITORY https://github.com/libuv/libuv.git
         GIT_TAG ${UV_GIT_TAG}
 
-        CMAKE_ARGS
+        UPDATE_COMMAND ""
+        PATCH_COMMAND ""
+        TEST_COMMAND ""
+
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Starting $<CONFIG> build"
+        COMMAND ${CMAKE_COMMAND}
+        <BINARY_DIR>
+        -DBUILD_TYPE=$<CONFIG>
+        -DCMAKE_BUILD_TYPE=$<CONFIG>
+        -DCMAKE_INSTALL_CONFIG_NAME=$<CONFIG>
         ${SUBPROJECTS_COMMON_CMAKE_ARGS}
         "-DCMAKE_C_FLAGS_DEBUG=${PROJECT_COMMON_FLAGS_DEBUG}"
         "-DCMAKE_C_FLAGS_RELEASE=${PROJECT_COMMON_FLAGS_RELEASE}"
@@ -16,10 +26,8 @@ ExternalProject_Add(
         "-DCMAKE_CXX_FLAGS_DEBUG=${PROJECT_COMMON_FLAGS_DEBUG}"
         "-DCMAKE_CXX_FLAGS_RELEASE=${PROJECT_COMMON_FLAGS_RELEASE}"
         "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${PROJECT_COMMON_FLAGS_RELEASE}"
-
-        UPDATE_COMMAND ""
-        PATCH_COMMAND ""
-        TEST_COMMAND ""
+        COMMAND       ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
+        COMMAND       ${CMAKE_COMMAND} -E echo "$<CONFIG> build complete"
 )
 
 add_library(uv_a STATIC IMPORTED GLOBAL)
