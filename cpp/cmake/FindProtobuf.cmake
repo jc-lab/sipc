@@ -28,7 +28,11 @@ foreach (Camel
     set(${UPPER} ${${Camel}})
 endforeach ()
 
-include(${THIRDPARTIES_OUTPUT_DIR}/cmake/protobuf-config.cmake)
+if (JCU_SIPC_SUB_PROJECT)
+    include(${THIRDPARTIES_OUTPUT_DIR}/cmake/protobuf-config.cmake)
+else()
+    include(${CMAKE_CURRENT_LIST_DIR}/thirdparty/protobuf-config.cmake)
+endif()
 
 function(protobuf_generate_ex)
     message("In function : ${Protobuf_IMPORT_DIRS}")

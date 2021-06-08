@@ -7,9 +7,7 @@ ExternalProject_Add(
         SOURCE_SUBDIR "cmake"
 
         CMAKE_ARGS
-        "-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}"
-        "-DTHIRDPARTIES_OUTPUT_DIR=${THIRDPARTIES_OUTPUT_DIR}"
-        "-DCMAKE_INSTALL_PREFIX=${THIRDPARTIES_OUTPUT_DIR}"
+        ${SUBPROJECTS_COMMON_CMAKE_ARGS}
         "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
         "-Dprotobuf_WITH_ZLIB=OFF"
         "-Dprotobuf_BUILD_TESTS=OFF"
