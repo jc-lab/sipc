@@ -2,6 +2,8 @@
 // Created by jichan on 2021-06-06.
 //
 
+#include <string.h>
+
 #include <mbedtls/ecp.h>
 #include <mbedtls/ecdh.h>
 #include <mbedtls/pk.h>
