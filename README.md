@@ -2,9 +2,22 @@
 
 Secure IPC
 
-* Encrypted communication through ECDH by passing Host's PublicKey through Environment or Cmdline.
+* Encrypted communication through ECDH by passing Host's PublicKey through Environment Variable or Cmdline.
 
 * It works with asynchronous IO through libuv, and uvw is used for C++.
+
+# Transport methods
+
+## STDIO
+
+**Working in progress**
+
+* stdin / stdout
+
+## TCP
+
+* By default, automatically used a port that not in use.
+* default hostname is 127.0.0.2.
 
 # Usage
 
