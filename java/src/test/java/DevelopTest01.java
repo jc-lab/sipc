@@ -1,11 +1,9 @@
-import io.grpc.stub.StreamObserver;
 import kr.jclab.javautils.sipc.ProcessSipcHost;
 import kr.jclab.javautils.sipc.ProcessStdioSipcHost;
 import kr.jclab.javautils.sipc.channel.tcp.TcpChannelHost;
 import kr.jclab.javautils.sipc.event.CalleeRequestContext;
 import kr.jclab.javautils.sipc.event.EventChannel;
 import kr.jclab.sipc.sample.proto.Sample1Messages;
-import kr.jclab.sipc.sample.proto.SampleServiceGrpc;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

@@ -1,7 +1,7 @@
 package kr.jclab.javautils.sipc;
 
-import io.grpc.BindableService;
-import io.grpc.Channel;
+//import io.grpc.BindableService;
+//import io.grpc.Channel;
 import kr.jclab.javautils.sipc.bson.SipcBsonHelper;
 import kr.jclab.javautils.sipc.channel.ChannelHost;
 import kr.jclab.javautils.sipc.channel.IpcChannel;
@@ -11,11 +11,10 @@ import kr.jclab.javautils.sipc.crypto.CryptoException;
 import kr.jclab.javautils.sipc.crypto.EphemeralKeyAlgorithmFactory;
 import kr.jclab.javautils.sipc.crypto.EphemeralKeyPair;
 import kr.jclab.javautils.sipc.event.EventChannel;
-import kr.jclab.javautils.sipc.grpc.MiddleGrpcChannel;
+//import kr.jclab.javautils.sipc.grpc.MiddleGrpcChannel;
 import kr.jclab.javautils.sipc.handler.DoneHandler;
 import kr.jclab.javautils.sipc.handler.HandshakeHandler;
 
-import java.awt.image.ImagingOpException;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
@@ -30,7 +29,7 @@ public abstract class SipcHost {
     private final CompletableFuture<Void> doneFuture = new CompletableFuture<>();
     private DoneHandler doneHandler;
 
-    private final MiddleGrpcChannel grpcChannel;
+//    private final MiddleGrpcChannel grpcChannel;
     private final EventChannel eventChannel;
 
     protected final IpcChannel channel;
@@ -41,7 +40,7 @@ public abstract class SipcHost {
         this.keyPair = keyPair;
         this.channel = channelHost.createChannel(this.ipcChannelListener, keyPair);
         this.executor = executor;
-        this.grpcChannel = new MiddleGrpcChannel(executor, this.channel);
+//        this.grpcChannel = new MiddleGrpcChannel(executor, this.channel);
         this.eventChannel = new EventChannel(executor, this.channel);
     }
 
@@ -69,9 +68,9 @@ public abstract class SipcHost {
                 );
     }
 
-    public void bindService(BindableService bindableService) {
-        this.grpcChannel.bindService(bindableService);
-    }
+//    public void bindService(BindableService bindableService) {
+//        this.grpcChannel.bindService(bindableService);
+//    }
 
     public Future<Void> handshake() {
         return this.handshakeFuture;
@@ -91,9 +90,9 @@ public abstract class SipcHost {
         return this;
     }
 
-    public Channel getGrpcChannel() {
-        return this.grpcChannel;
-    }
+//    public Channel getGrpcChannel() {
+//        return this.grpcChannel;
+//    }
 
     public EventChannel getEventChannel() {
         return eventChannel;
