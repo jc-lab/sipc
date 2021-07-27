@@ -49,7 +49,7 @@ public class CallerRequestContext<TRES extends GeneratedMessageV3, TPROG extends
     public void onCompleteMessage(Frames.EventComplete payload) throws IOException {
         try {
             if (Frames.EventStatus.OK.equals(payload.getStatus())) {
-                Message message = this.progressDefaultInstance.newBuilderForType()
+                Message message = this.responseDefaultInstance.newBuilderForType()
                         .mergeFrom(payload.getData())
                         .build();
                 this.completableFuture.complete((TRES) message);
