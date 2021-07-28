@@ -33,6 +33,7 @@ void CalleeRequestContextImpl::progress(const ::google::protobuf::Message *progr
 }
 
 void CalleeRequestContextImpl::complete(const ::google::protobuf::Message *response) {
+  //TODO: need thread-safe
   proto::EventComplete message;
   message.set_stream_id(stream_id_);
   message.set_data(response->SerializeAsString());

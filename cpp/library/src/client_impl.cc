@@ -10,6 +10,8 @@
 
 #include <utility>
 
+#include <uvw/async.h>
+
 #include <jcu-sipc/crypto/secure_random.h>
 #include <jcu-sipc/crypto/ephemeral_key_factory.h>
 #include <jcu-sipc/crypto/ephemeral_key_pair.h>
@@ -38,20 +40,25 @@ ClientImpl::ClientImpl(
   default_random_ = std::move(secure_random);
 }
 
-void ClientImpl::close() {
+void ClientImpl::closeImpl() {
   std::shared_ptr<ClientImpl> self(self_.lock());
-
   logger_->logf(Logger::kLogInfo, "[ClientImpl] closing");
-
   self->available_transports_.clear();
   if (transport_) {
     transport_->close(false, [self]() -> void {
-      self->logger_->logf(Logger::kLogInfo, "[ClientImpl] close");
-
       self->transport_.reset();
       self->loop_.reset();
     });
   }
+}
+
+void ClientImpl::close() {
+  std::shared_ptr<ClientImpl> self(self_.lock());
+  std::shared_ptr<uvw::AsyncHandle> handle = loop_->resource<uvw::AsyncHandle>();
+  handle->once<uvw::AsyncEvent>([self](auto& evt, auto& handle) -> void {
+    self->closeImpl();
+  });
+  handle->send();
 }
 
 void ClientImpl::registerTransport(std::shared_ptr<transport::Base> transport) {

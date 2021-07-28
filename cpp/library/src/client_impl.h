@@ -11,7 +11,9 @@
 #ifndef JCU_SIPC_CPP_LIBRARY_SRC_CLIENT_IMPL_H_
 #define JCU_SIPC_CPP_LIBRARY_SRC_CLIENT_IMPL_H_
 
+#include <memory>
 #include <map>
+#include <mutex>
 
 #include <jcu-sipc/transport/base.h>
 #include <jcu-sipc/protocol/frame_converter.h>
@@ -99,6 +101,7 @@ class ClientImpl : public Client, public protocol::FrameHandlers, public transpo
   std::map<std::string, std::unique_ptr<WrappedDataReceiverAdapterBase>> wrapped_data_receivers_;
   std::map<std::string, OnRequestMethod> request_methods_;
 
+  std::mutex mutex_;
   std::map<std::string, std::shared_ptr<RequestContext>> running_calls_;
 
   void earlyInit();

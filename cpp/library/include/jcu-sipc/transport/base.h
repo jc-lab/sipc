@@ -68,6 +68,7 @@ class Base {
 
  public:
   Base(std::shared_ptr<uvw::Loop> loop);
+  virtual ~Base() = default;
 
   virtual std::list<std::string> getChannelTypes() const = 0;
 

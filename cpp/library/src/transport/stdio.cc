@@ -26,8 +26,6 @@ std::list<std::string> Stdio::getChannelTypes() const {
 }
 
 int Stdio::start(const ConnectInfo *connect_info) {
-  std::shared_ptr<Stdio> self(self_.lock());
-
   tty_stdin_ = loop_->resource<uvw::TTYHandle>(uvw::StdIN, true);
   pipe_stdin_ = (!tty_stdin_) ? loop_->resource<uvw::PipeHandle>() : nullptr;
 
@@ -35,14 +33,18 @@ int Stdio::start(const ConnectInfo *connect_info) {
   pipe_stdout_ = (!tty_stdout_) ? loop_->resource<uvw::PipeHandle>() : nullptr;
 
   if (pipe_stdout_) {
-    pipe_stdout_->on<uvw::ErrorEvent>([self](const uvw::ErrorEvent &evt, auto &handle) -> void {
+    pipe_stdout_->data(self_.lock());
+    pipe_stdout_->on<uvw::ErrorEvent>([weak_self = self_](const uvw::ErrorEvent &evt, auto &handle) -> void {
+      std::shared_ptr<Stdio> self(weak_self.lock());
       if (self->out_error_ignore_.fetch_and(0) == 0) {
         self->onError(evt);
       }
     });
     pipe_stdout_->open(uvw::StdOUT);
   } else if (tty_stdout_) {
-    tty_stdout_->on<uvw::ErrorEvent>([self](const uvw::ErrorEvent &evt, auto &handle) -> void {
+    tty_stdout_->data(self_.lock());
+    tty_stdout_->on<uvw::ErrorEvent>([weak_self = self_](const uvw::ErrorEvent &evt, auto &handle) -> void {
+      std::shared_ptr<Stdio> self(weak_self.lock());
       if (self->out_error_ignore_.fetch_and(0) == 0) {
         self->onError(evt);
       }
@@ -50,19 +52,25 @@ int Stdio::start(const ConnectInfo *connect_info) {
   }
 
   if (pipe_stdin_) {
-    pipe_stdin_->on<uvw::ErrorEvent>([self](uvw::ErrorEvent &evt, auto &handle) -> void {
+    pipe_stdin_->read();
+    pipe_stdin_->on<uvw::ErrorEvent>([weak_self = self_](uvw::ErrorEvent &evt, auto &handle) -> void {
+      std::shared_ptr<Stdio> self(weak_self.lock());
       self->onError(evt);
     });
-    pipe_stdin_->on<uvw::DataEvent>([self](uvw::DataEvent &evt, auto &handle) -> void {
+    pipe_stdin_->on<uvw::DataEvent>([weak_self = self_](uvw::DataEvent &evt, auto &handle) -> void {
+      std::shared_ptr<Stdio> self(weak_self.lock());
       self->onDataEvent(evt);
     });
     pipe_stdin_->open(uvw::StdIN);
-    pipe_stdin_->read();
+    pipe_stdin_->data(self_.lock());
   } else if (tty_stdin_) {
-    tty_stdin_->on<uvw::ErrorEvent>([self](uvw::ErrorEvent &evt, auto &handle) -> void {
+    tty_stdin_->data(self_.lock());
+    tty_stdin_->on<uvw::ErrorEvent>([weak_self = self_](uvw::ErrorEvent &evt, auto &handle) -> void {
+      std::shared_ptr<Stdio> self(weak_self.lock());
       self->onError(evt);
     });
-    tty_stdin_->on<uvw::DataEvent>([self](uvw::DataEvent &evt, auto &handle) -> void {
+    tty_stdin_->on<uvw::DataEvent>([weak_self = self_](uvw::DataEvent &evt, auto &handle) -> void {
+      std::shared_ptr<Stdio> self(weak_self.lock());
       self->onDataEvent(evt);
     });
     tty_stdin_->read();

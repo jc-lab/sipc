@@ -7,7 +7,6 @@
  *            of the Apache License 2.0.  See the LICENSE file for details.
  */
 
-
 #include <jcu-sipc/transport/tcp.h>
 
 namespace jcu {
@@ -28,27 +27,32 @@ std::list<std::string> Tcp::getChannelTypes() const {
 
 int Tcp::start(const ConnectInfo *connect_info) {
   const auto *tcp_connect_info = dynamic_cast<const TcpConnectInfo *>(connect_info);
-  std::shared_ptr<Tcp> self(self_.lock());
   handle_ = loop_->resource<uvw::TCPHandle>();
-  handle_->on<uvw::ErrorEvent>([self](const uvw::ErrorEvent &evt, auto &handle) -> void {
+  handle_->on<uvw::ErrorEvent>([weak_self = self_](const uvw::ErrorEvent &evt, auto &handle) -> void {
+    std::shared_ptr<Tcp> self(weak_self.lock());
     if (self->error_ignore_.fetch_and(0) == 0) {
       self->onError(evt);
     }
   });
-  handle_->once<uvw::ConnectEvent>([self](const uvw::ConnectEvent &evt, auto &handle) -> void {
+  handle_->once<uvw::ConnectEvent>([weak_self = self_](const uvw::ConnectEvent &evt, auto &handle) -> void {
+    std::shared_ptr<Tcp> self(weak_self.lock());
     handle.read();
     self->onConnectEvent(evt);
   });
-  handle_->on<uvw::DataEvent>([self](const uvw::DataEvent &evt, auto &handle) -> void {
+  handle_->on<uvw::DataEvent>([weak_self = self_](const uvw::DataEvent &evt, auto &handle) -> void {
+    std::shared_ptr<Tcp> self(weak_self.lock());
     self->onDataEvent(evt);
   });
-  handle_->once<uvw::EndEvent>([self](const uvw::EndEvent &evt, auto &handle) -> void {
+  handle_->once<uvw::EndEvent>([weak_self = self_](const uvw::EndEvent &evt, auto &handle) -> void {
+    std::shared_ptr<Tcp> self(weak_self.lock());
     self->onEndEvent(evt);
   });
-  handle_->once<uvw::CloseEvent>([self](const uvw::CloseEvent &evt, auto &handle) -> void {
+  handle_->once<uvw::CloseEvent>([weak_self = self_](const uvw::CloseEvent &evt, auto &handle) -> void {
+    std::shared_ptr<Tcp> self(weak_self.lock());
     self->onCloseEvent(evt);
   });
   handle_->connect(tcp_connect_info->getAddress(), tcp_connect_info->getPort());
+  handle_->data(self_.lock());
   return 0;
 }
 
@@ -69,7 +73,6 @@ void Tcp::write(std::unique_ptr<char[]> data, unsigned int length, const WriteHa
   self->error_ignore_.store(1);
   int rc = handle_->tryWrite(data.get(), length);
   self->error_ignore_.store(0);
-
   if (rc > 0) {
     uvw::ErrorEvent error_event{0};
     write_handler(false, error_event);
