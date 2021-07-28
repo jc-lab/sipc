@@ -105,6 +105,7 @@ class ClientImpl : public Client, public protocol::FrameHandlers, public transpo
   std::map<std::string, std::shared_ptr<RequestContext>> running_calls_;
 
   void earlyInit();
+  void closeImpl();
 
  public:
   static std::shared_ptr<ClientImpl> create(std::shared_ptr<uvw::Loop> loop,

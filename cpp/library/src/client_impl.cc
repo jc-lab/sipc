@@ -57,6 +57,7 @@ void ClientImpl::close() {
   std::shared_ptr<uvw::AsyncHandle> handle = loop_->resource<uvw::AsyncHandle>();
   handle->once<uvw::AsyncEvent>([self](auto& evt, auto& handle) -> void {
     self->closeImpl();
+    handle.close();
   });
   handle->send();
 }
