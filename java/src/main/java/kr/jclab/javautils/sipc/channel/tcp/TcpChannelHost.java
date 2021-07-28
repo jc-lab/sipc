@@ -94,8 +94,8 @@ public class TcpChannelHost implements ChannelHost {
     public void close() throws IOException {
         this.running.set(false);
         try {
-            this.closeFuture.wait();
-        } catch (InterruptedException e) {
+            this.closeFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
             throw new IOException(e);
         }
     }
