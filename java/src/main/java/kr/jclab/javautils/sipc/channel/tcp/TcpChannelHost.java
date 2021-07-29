@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -54,21 +55,25 @@ public class TcpChannelHost implements ChannelHost {
         int port = (inetSocketAddress != null) ? inetSocketAddress.getPort() : 0;
         InetSocketAddress serverAddress = null;
 
+        SocketException bindException = null;
         if (port > 0) {
             serverAddress = new InetSocketAddress(address, port);
             this.serverSocketChannel.bind(serverAddress);
         } else {
-            for (port = 8080; port > 4096; port--) {
+            for (port = 65000; port > 4096; port--) {
                 try {
+                    if (port == 8080) continue;
                     InetSocketAddress tempAddress = new InetSocketAddress(address, port);
                     this.serverSocketChannel.bind(tempAddress);
                     serverAddress = tempAddress;
                     break;
-                } catch (BindException e) {}
+                } catch (SocketException e) {
+                    bindException = e;
+                }
             }
         }
         if (serverAddress == null) {
-            throw new BindException("No idle ports");
+            throw new BindException("No idle ports: " + bindException.getMessage());
         }
 
         this.serverAddress = serverAddress;
