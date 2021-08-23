@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(JCU_SIPC_MSVC_STATIC_RUNTIME OFF CACHE BOOL "jcu-sipc msvc static runtime")
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(cmake/common.cmake)
 
 make_directory("${THIRDPARTIES_OUTPUT_DIR}/include")
@@ -29,7 +28,10 @@ include(FetchContent)
 
 set(GRPC_SRC_DIR ${CMAKE_BINARY_DIR}/thirdparty/grpc-src)
 make_directory(${GRPC_SRC_DIR})
+
+include(thirdparty/protobuf.cmake)
 add_subdirectory(thirdparty)
+#list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # ================================================================================
 
@@ -51,6 +53,8 @@ if (MSVC AND JCU_SIPC_MSVC_STATIC_RUNTIME)
     endforeach ()
 endif ()
 
+include(protobuf-util.cmake)
+
 add_subdirectory(library)
 #add_subdirectory(test)
-add_subdirectory(sample)
+add_subdirectory(sample EXCLUDE_FROM_ALL)

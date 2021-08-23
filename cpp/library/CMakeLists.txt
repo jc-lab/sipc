@@ -1,4 +1,3 @@
-find_package(Protobuf REQUIRED)
 #find_package(absl REQUIRED)
 #find_package(gRPC REQUIRED)
 
@@ -63,9 +62,6 @@ add_dependencies(
         ${jcu_sipc_target}
         googletest_project
         mbedtls_project
-        uv_project
-        uvw_project
-        protobuf_project
 )
 target_link_libraries(
         ${jcu_sipc_target}
@@ -74,9 +70,13 @@ target_link_libraries(
         nlohmann_json
         uv_a
         uvw-static
-        protobuf::libprotobuf
-        protobuf::libprotoc
+        ${_JCU_SIPC_PROTOBUF_LIBRARIES}
 #        gRPC::grpc++_unsecure
+)
+target_include_directories(
+        ${jcu_sipc_target}
+        PUBLIC
+        ${_JCU_SIPC_PROTOBUF_WELLKNOWN_INCLUDE_DIR}
 )
 if (WIN32)
     target_link_libraries(
