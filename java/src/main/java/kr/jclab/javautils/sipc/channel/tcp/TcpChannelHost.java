@@ -35,6 +35,7 @@ public class TcpChannelHost implements ChannelHost {
     private final Thread workerThread = new Thread(this::workerRun);
 
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private final Selector selector;
 
     private final Map<String, IpcChannel> channelMap = new HashMap<>();
 
@@ -47,57 +48,75 @@ public class TcpChannelHost implements ChannelHost {
     }
 
     private TcpChannelHost(InetSocketAddress inetSocketAddress) throws IOException {
-        this.serverSocketChannel = ServerSocketChannel.open();
-
-        InetAddress address = Optional.ofNullable(inetSocketAddress)
-                .map(InetSocketAddress::getAddress)
-                .orElse(InetAddress.getAllByName("127.0.0.2")[0]);
-        int port = (inetSocketAddress != null) ? inetSocketAddress.getPort() : 0;
-        InetSocketAddress serverAddress = null;
-
-        SocketException bindException = null;
-        if (port > 0) {
-            serverAddress = new InetSocketAddress(address, port);
-            this.serverSocketChannel.bind(serverAddress);
-        } else {
-            for (port = 65000; port > 4096; port--) {
-                try {
-                    if (port == 8080) continue;
-                    InetSocketAddress tempAddress = new InetSocketAddress(address, port);
-                    this.serverSocketChannel.bind(tempAddress);
-                    serverAddress = tempAddress;
-                    break;
-                } catch (SocketException e) {
-                    bindException = e;
-                }
-            }
-        }
-        if (serverAddress == null) {
-            throw new BindException("No idle ports: " + bindException.getMessage());
-        }
-
-        this.serverAddress = serverAddress;
-        this.log.info("bind on " + serverAddress.toString());
-
-        this.serverSocketChannel.configureBlocking(false);
-
-        this.running.set(true);
-        this.workerThread.start();
+        ServerSocketChannel serverSocketChannel = null;
+        Selector selector = null;
 
         try {
-            threadInitFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            this.running.set(false);
-            if (e instanceof ExecutionException) {
-                throw new IOException(e.getCause());
+            serverSocketChannel = ServerSocketChannel.open();
+            selector = Selector.open();
+
+            this.serverSocketChannel = serverSocketChannel;
+            this.selector = selector;
+
+            InetAddress address = Optional.ofNullable(inetSocketAddress)
+                    .map(InetSocketAddress::getAddress)
+                    .orElse(InetAddress.getAllByName("127.0.0.2")[0]);
+            int port = (inetSocketAddress != null) ? inetSocketAddress.getPort() : 0;
+            InetSocketAddress serverAddress = null;
+
+            SocketException bindException = null;
+            if (port > 0) {
+                serverAddress = new InetSocketAddress(address, port);
+                serverSocketChannel.bind(serverAddress);
+            } else {
+                for (port = 65000; port > 4096; port--) {
+                    try {
+                        if (port == 8080) continue;
+                        InetSocketAddress tempAddress = new InetSocketAddress(address, port);
+                        this.serverSocketChannel.bind(tempAddress);
+                        serverAddress = tempAddress;
+                        break;
+                    } catch (SocketException e) {
+                        bindException = e;
+                    }
+                }
             }
-            throw new IOException(e);
+            if (serverAddress == null) {
+                throw new BindException("No idle ports: " + bindException.getMessage());
+            }
+
+            this.serverAddress = serverAddress;
+            this.log.info("bind on " + serverAddress.toString());
+
+            serverSocketChannel.configureBlocking(false);
+
+            this.running.set(true);
+            this.workerThread.start();
+
+            try {
+                threadInitFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                this.running.set(false);
+                if (e instanceof ExecutionException) {
+                    throw new IOException(e.getCause());
+                }
+                throw new IOException(e);
+            }
+        } catch (IOException e) {
+            if (selector != null) {
+                try { selector.close(); } catch (IOException ignoredException) { /* IGNORE */ }
+            }
+            if (serverSocketChannel != null) {
+                try { serverSocketChannel.close(); } catch (IOException ignoredException) { /* IGNORE */ }
+            }
+            throw e;
         }
     }
 
     @Override
     public void close() throws IOException {
         this.running.set(false);
+        try { this.selector.close(); } catch (IOException ignoredException) { /* IGNORE */ }
         try {
             this.closeFuture.get();
         } catch (InterruptedException | ExecutionException e) {
@@ -106,13 +125,11 @@ public class TcpChannelHost implements ChannelHost {
     }
 
     private void workerRun() {
-        Selector selector;
         SelectionKey acceptKey;
 
         try {
-            selector = Selector.open();
             int ops = serverSocketChannel.validOps();
-            acceptKey = this.serverSocketChannel.register(selector, ops, null);
+            acceptKey = this.serverSocketChannel.register(this.selector, ops, null);
         } catch (IOException e) {
             threadInitFuture.completeExceptionally(e);
             return ;
@@ -121,8 +138,10 @@ public class TcpChannelHost implements ChannelHost {
 
         while (this.running.get()) {
             try {
-                selector.select();
-                Set<SelectionKey> keys = selector.selectedKeys();
+                int count = this.selector.select();
+                if (count <= 0) continue;
+
+                Set<SelectionKey> keys = this.selector.selectedKeys();
 
                 for (Iterator<SelectionKey> iterator = keys.iterator(); iterator.hasNext(); iterator.remove()) {
                     SelectionKey key = iterator.next();
@@ -136,7 +155,7 @@ public class TcpChannelHost implements ChannelHost {
                         SocketChannel clientChannel = serverSocketChannel.accept();
                         TcpClientContext clientContext = new TcpClientContext(this, clientChannel);
                         clientChannel.configureBlocking(false);
-                        clientChannel.register(selector, SelectionKey.OP_READ, clientContext);
+                        clientChannel.register(this.selector, SelectionKey.OP_READ, clientContext);
                         this.log.info("client accepted: " + clientChannel);
                         continue;
                     }
