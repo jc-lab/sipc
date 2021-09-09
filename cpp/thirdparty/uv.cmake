@@ -1,52 +1,20 @@
-if (NOT UV_GIT_TAG)
-    set(UV_GIT_TAG 1dff88e5161cba5c59276d2070d2e304e4dcb242) # v1.41.0
-endif ()
+if (NOT TARGET uv::uv-static AND NOT TARGET uv_a)
+    if (NOT UV_GIT_TAG)
+        set(UV_GIT_TAG 1dff88e5161cba5c59276d2070d2e304e4dcb242) # v1.41.0
+    endif ()
 
-ExternalProject_Add(
-        uv_project
-
-        GIT_REPOSITORY https://github.com/libuv/libuv.git
-        GIT_TAG ${UV_GIT_TAG}
-
-        UPDATE_COMMAND ""
-        PATCH_COMMAND ""
-        TEST_COMMAND ""
-
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ${CMAKE_COMMAND} -E echo "Starting $<CONFIG> build"
-        COMMAND ${CMAKE_COMMAND} <SOURCE_DIR> -DBUILD_TYPE=$<CONFIG> -DCMAKE_BUILD_TYPE=$<CONFIG> -DCMAKE_INSTALL_CONFIG_NAME=$<CONFIG> ${SUBPROJECTS_COMMON_CMAKE_ARGS}
-        "-DCMAKE_C_FLAGS_DEBUG=${PROJECT_COMMON_FLAGS_DEBUG}"
-        "-DCMAKE_C_FLAGS_RELEASE=${PROJECT_COMMON_FLAGS_RELEASE}"
-        "-DCMAKE_C_FLAGS_RELWITHDEBINFO=${PROJECT_COMMON_FLAGS_RELEASE}"
-        "-DCMAKE_CXX_FLAGS_DEBUG=${PROJECT_COMMON_FLAGS_DEBUG}"
-        "-DCMAKE_CXX_FLAGS_RELEASE=${PROJECT_COMMON_FLAGS_RELEASE}"
-        "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${PROJECT_COMMON_FLAGS_RELEASE}"
-
-        COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
-)
-
-add_library(uv_a STATIC IMPORTED GLOBAL)
-target_include_directories(
-        uv_a
-        INTERFACE
-        ${THIRDPARTIES_OUTPUT_DIR}/include
-)
-if (MSVC)
-    set_target_properties(
-            uv_a PROPERTIES
-            IMPORTED_LOCATION ${THIRDPARTIES_OUTPUT_DIR}/lib/Debug/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
-            IMPORTED_LOCATION_DEBUG ${THIRDPARTIES_OUTPUT_DIR}/lib/Debug/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
-            IMPORTED_LOCATION_RELEASE ${THIRDPARTIES_OUTPUT_DIR}/lib/Release/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
-            IMPORTED_LOCATION_RELWITHDEBINFO ${THIRDPARTIES_OUTPUT_DIR}/lib/RelWithDebInfo/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
+    FetchContent_Declare(
+            uv
+            GIT_REPOSITORY https://github.com/libuv/libuv.git
+            GIT_TAG ${UV_GIT_TAG}
     )
-else()
-    set_target_properties(
-            uv_a PROPERTIES
-            IMPORTED_LOCATION ${THIRDPARTIES_OUTPUT_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
-            IMPORTED_LOCATION_DEBUG ${THIRDPARTIES_OUTPUT_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
-            IMPORTED_LOCATION_RELEASE ${THIRDPARTIES_OUTPUT_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
-            IMPORTED_LOCATION_RELWITHDEBINFO ${THIRDPARTIES_OUTPUT_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}uv_a${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
+    FetchContent_GetProperties(uv)
+    if (NOT uv_POPULATED)
+        FetchContent_Populate(uv)
+    endif ()
+    add_subdirectory(${uv_SOURCE_DIR} third_party/uv)
+
+    add_library(uv::uv-static ALIAS uv_a)
+else(TARGET uv::uv-static AND NOT TARGET uv_a)
+    add_library(uv::uv-static ALIAS uv_a)
 endif()
-
-add_dependencies(uv_a uv_project)

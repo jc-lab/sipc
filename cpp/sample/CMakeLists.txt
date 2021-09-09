@@ -1,4 +1,3 @@
-find_package(Protobuf REQUIRED)
 #find_package(gRPC REQUIRED)
 
 set(project_prefix jcu_sipc_test_)
@@ -15,6 +14,7 @@ target_link_libraries("${project_prefix}sample-app"
         )
 target_include_directories("${project_prefix}sample-app"
         PRIVATE
+        ${_JCU_SIPC_PROTOBUF_WELLKNOWN_INCLUDE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
         )
 protobuf_generate_ex(

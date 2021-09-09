@@ -11,10 +11,18 @@ set(SUBPROJECTS_COMMON_CMAKE_ARGS
 
 include(gtest.cmake)
 include(mbedtls.cmake)
-include(uv.cmake)
-include(uvw.cmake)
-include(nlohmann_json.cmake)
-include(protobuf.cmake)
+
+if (NOT TARGET uv_a)
+    include(uv.cmake)
+endif()
+
+if (NOT TARGET uvw-static)
+    include(uvw.cmake)
+endif()
+
+if (NOT TARGET nlohmann_json)
+    include(nlohmann_json.cmake)
+endif()
 
 #TODO: USE GRPC INTERFACE
 # include(grpc.cmake)
