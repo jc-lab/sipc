@@ -138,6 +138,9 @@ class ClientImpl : public Client, public protocol::FrameHandlers, public transpo
   ) override;
   void requestImpl(std::shared_ptr<CallerRequestContext> ctx) override;
 
+  void asyncRun(std::shared_ptr<std::function<void()>> fn);
+  void asyncRun(std::function<void()>&& fn);
+
  public:
   void onAlertFrame(proto::AlertFrame *frame) override;
   void onClientHelloFrame(proto::ClientHelloFrame *frame) override;
@@ -155,7 +158,7 @@ class ClientImpl : public Client, public protocol::FrameHandlers, public transpo
   std::string getTypeUrl(const ::google::protobuf::Message* message);
   int sendApplicationData(const ::google::protobuf::Message* message);
 
-  void eventStreamDone(RequestContext* ctx);
+  void eventStreamDone(const std::string& stream_id);
   void registerWrappedDataImpl(std::unique_ptr<WrappedDataReceiverAdapterBase> adapter);
 
   template<class T>

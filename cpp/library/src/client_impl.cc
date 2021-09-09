@@ -209,10 +209,12 @@ void ClientImpl::onDataEventRequest(const proto::EventRequest& payload) {
   std::thread worker_thread([self](const proto::EventRequest& payload) -> void {
     auto method_it = self->request_methods_.find(payload.method_name());
     if (method_it == self->request_methods_.cend()) {
-      proto::EventComplete complete_message;
-      complete_message.set_stream_id(payload.stream_id());
-      complete_message.set_status(proto::EventStatus::METHOD_NOT_EXIST);
-      self->sendApplicationData(&complete_message);
+      self->asyncRun([self, stream_id = payload.stream_id()]() -> void {
+        proto::EventComplete complete_message;
+        complete_message.set_stream_id(stream_id);
+        complete_message.set_status(proto::EventStatus::METHOD_NOT_EXIST);
+        self->sendApplicationData(&complete_message);
+      });
       return ;
     }
     auto const& method_def = method_it->second;
@@ -240,7 +242,7 @@ void ClientImpl::onDataEventComplete(const proto::EventComplete& payload) {
     return ;
   }
   call_it->second->onComplete(payload);
-  this->eventStreamDone(call_it->second.get());
+  this->eventStreamDone(call_it->second->getStreamId());
 }
 
 void ClientImpl::earlyInit() {
@@ -376,6 +378,24 @@ void ClientImpl::requestImpl(std::shared_ptr<CallerRequestContext> ctx) {
   sendWrappedData(wrapped_data, [](bool is_error, const ::uvw::ErrorEvent& evt) -> void {});
 }
 
+void ClientImpl::asyncRun(std::shared_ptr<std::function<void()>> fn) {
+  auto handle = loop_->resource<uvw::AsyncHandle>();
+  handle->once<uvw::AsyncEvent>([fn = std::move(fn)](auto& event, auto& handle) -> void {
+    (*fn)();
+    handle.close();
+  });
+  handle->send();
+}
+
+void ClientImpl::asyncRun(std::function<void()> &&fn) {
+  auto handle = loop_->resource<uvw::AsyncHandle>();
+  handle->once<uvw::AsyncEvent>([fn = std::move(fn)](auto& event, auto& handle) -> void {
+    fn();
+    handle.close();
+  });
+  handle->send();
+}
+
 int ClientImpl::sendWrappedData(const proto::WrappedData &data, const transport::WriteHandler_t& write_handler) {
   int rc;
   proto::EncryptedWrappedData encrypted_wrapped_data;
@@ -394,9 +414,9 @@ void ClientImpl::registerWrappedDataImpl(std::unique_ptr<WrappedDataReceiverAdap
   wrapped_data_receivers_.emplace(type_url, std::move(adapter));
 }
 
-void ClientImpl::eventStreamDone(RequestContext* ctx) {
-  logger_->logf(Logger::kLogInfo, "event:stream[%s] done", ctx->getStreamId().c_str());
-  running_calls_.erase(ctx->getStreamId());
+void ClientImpl::eventStreamDone(const std::string& stream_id) {
+  logger_->logf(Logger::kLogInfo, "event:stream[%s] done", stream_id.c_str());
+  running_calls_.erase(stream_id);
 }
 
 std::string ClientImpl::generateUUID() {
