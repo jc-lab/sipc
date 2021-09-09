@@ -26,19 +26,25 @@ const std::string &CalleeRequestContextImpl::getStreamId() const {
 }
 
 void CalleeRequestContextImpl::progress(const ::google::protobuf::Message *progress) {
-  proto::EventProgress message;
-  message.set_stream_id(stream_id_);
-  message.set_data(progress->SerializeAsString());
-  client_->sendApplicationData(&message);
+  std::shared_ptr<ClientImpl> client = client_;
+  std::shared_ptr<proto::EventProgress> message(std::make_shared<proto::EventProgress>());
+  message->set_stream_id(stream_id_);
+  message->set_data(progress->SerializeAsString());
+  client_->asyncRun(std::make_shared<std::function<void()>>([client, message]() -> void {
+    client->sendApplicationData(message.get());
+  }));
 }
 
 void CalleeRequestContextImpl::complete(const ::google::protobuf::Message *response) {
-  //TODO: need thread-safe
-  proto::EventComplete message;
-  message.set_stream_id(stream_id_);
-  message.set_data(response->SerializeAsString());
-  client_->sendApplicationData(&message);
-  client_->eventStreamDone(this);
+  std::shared_ptr<ClientImpl> client = client_;
+  std::string stream_id = getStreamId();
+  std::shared_ptr<proto::EventComplete> message(std::make_unique<proto::EventComplete>());
+  message->set_stream_id(stream_id_);
+  message->set_data(response->SerializeAsString());
+  client_->asyncRun(std::make_shared<std::function<void()>>([client, stream_id, message]() -> void {
+    client->sendApplicationData(message.get());
+    client->eventStreamDone(stream_id);
+  }));
 }
 
 CallerRequestContextImpl::CallerRequestContextImpl(
