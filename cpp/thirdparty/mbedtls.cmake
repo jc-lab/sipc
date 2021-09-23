@@ -25,7 +25,7 @@ if (NOT TARGET mbedcrypto OR NOT TARGET mbedtls OR NOT TARGET mbedx509)
             "-DENABLE_PROGRAMS=OFF"
 
             UPDATE_COMMAND ""
-            PATCH_COMMAND ""
+	    PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/mbedtls-fix-test-suite-for-alpine.patch
             TEST_COMMAND ""
     )
 

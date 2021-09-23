@@ -1,0 +1,17 @@
+diff --git a/tests/suites/test_suite_net.function b/tests/suites/test_suite_net.function
+index f429fc922..513b72364 100644
+--- a/tests/suites/test_suite_net.function
++++ b/tests/suites/test_suite_net.function
+@@ -9,11 +9,11 @@
+ #endif
+ 
+ #if defined(MBEDTLS_PLATFORM_IS_UNIXLIKE)
+-#include <sys/fcntl.h>
+ #include <sys/resource.h>
+ #include <sys/stat.h>
+ #include <sys/time.h>
+ #include <sys/types.h>
++#include <fcntl.h>
+ #include <unistd.h>
+ #endif
+ 
