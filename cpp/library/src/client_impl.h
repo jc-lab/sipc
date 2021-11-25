@@ -15,6 +15,8 @@
 #include <map>
 #include <mutex>
 
+#include <uvw/async.h>
+
 #include <jcu-sipc/transport/base.h>
 #include <jcu-sipc/protocol/frame_converter.h>
 
@@ -65,11 +67,44 @@ class WrappedDataReceiverAdapter : public WrappedDataReceiverAdapterBase {
   }
 };
 
-
 struct OnRequestMethod {
   std::string request_name;
   CalleeRequestContextBaseFactory_t request_context_factory;
   std::function<void(std::shared_ptr<CalleeRequestContextBase>)> handler;
+};
+
+struct QueuedTaskResource {
+  std::shared_ptr<std::function<void()>> fn;
+};
+
+struct TaskQueue {
+  std::shared_ptr<uvw::AsyncHandle> handle;
+  std::recursive_mutex mutex;
+  std::deque<QueuedTaskResource> queue;
+
+  void processQueuedTask() {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    while (!queue.empty()) {
+      QueuedTaskResource resource = std::move(queue.front());
+      queue.pop_front();
+      (*resource.fn)();
+    }
+  }
+
+  void addQueuedTask(std::shared_ptr<std::function<void()>> task) {
+    std::lock_guard<std::recursive_mutex> lock(mutex);
+    QueuedTaskResource resource { std::move(task) };
+    queue.emplace_back(std::move(resource));
+    if (handle) {
+      handle->send();
+    }
+  }
+
+  void addQueuedTask(std::function<void()>&& task) {
+    std::shared_ptr<std::function<void()>> shared_task(new std::function<void()>());
+    *shared_task = std::move(task);
+    addQueuedTask(std::move(shared_task));
+  }
 };
 
 class ClientImpl : public Client, public protocol::FrameHandlers, public transport::TransportHandler {
@@ -103,6 +138,8 @@ class ClientImpl : public Client, public protocol::FrameHandlers, public transpo
 
   std::mutex mutex_;
   std::map<std::string, std::shared_ptr<RequestContext>> running_calls_;
+
+  TaskQueue task_queue_;
 
   void earlyInit();
   void closeImpl();
