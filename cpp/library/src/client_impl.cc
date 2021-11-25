@@ -44,6 +44,10 @@ void ClientImpl::closeImpl() {
   std::shared_ptr<ClientImpl> self(self_.lock());
   logger_->logf(Logger::kLogInfo, "[ClientImpl] closing");
   self->available_transports_.clear();
+  if (task_queue_.handle) {
+    task_queue_.handle->close();
+    task_queue_.handle.reset();
+  }
   if (transport_) {
     transport_->close(false, [self]() -> void {
       self->transport_.reset();
@@ -54,12 +58,9 @@ void ClientImpl::closeImpl() {
 
 void ClientImpl::close() {
   std::shared_ptr<ClientImpl> self(self_.lock());
-  std::shared_ptr<uvw::AsyncHandle> handle = loop_->resource<uvw::AsyncHandle>();
-  handle->once<uvw::AsyncEvent>([self](auto& evt, auto& handle) -> void {
+  this->asyncRun([self]() -> void {
     self->closeImpl();
-    handle.close();
   });
-  handle->send();
 }
 
 void ClientImpl::registerTransport(std::shared_ptr<transport::Base> transport) {
@@ -246,6 +247,13 @@ void ClientImpl::onDataEventComplete(const proto::EventComplete& payload) {
 }
 
 void ClientImpl::earlyInit() {
+  std::shared_ptr<ClientImpl> self(self_.lock());
+
+  task_queue_.handle = loop_->resource<uvw::AsyncHandle>();
+  task_queue_.handle->on<uvw::AsyncEvent>([self](auto& event, auto& handle) -> void {
+    self->task_queue_.processQueuedTask();
+  });
+
   registerWrappedData<proto::EventRequest>(std::bind(&ClientImpl::onDataEventRequest, this, std::placeholders::_1));
   registerWrappedData<proto::EventProgress>(std::bind(&ClientImpl::onDataEventProgress, this, std::placeholders::_1));
   registerWrappedData<proto::EventComplete>(std::bind(&ClientImpl::onDataEventComplete, this, std::placeholders::_1));
@@ -379,21 +387,11 @@ void ClientImpl::requestImpl(std::shared_ptr<CallerRequestContext> ctx) {
 }
 
 void ClientImpl::asyncRun(std::shared_ptr<std::function<void()>> fn) {
-  auto handle = loop_->resource<uvw::AsyncHandle>();
-  handle->once<uvw::AsyncEvent>([fn = std::move(fn)](auto& event, auto& handle) -> void {
-    (*fn)();
-    handle.close();
-  });
-  handle->send();
+  task_queue_.addQueuedTask(std::move(fn));
 }
 
 void ClientImpl::asyncRun(std::function<void()> &&fn) {
-  auto handle = loop_->resource<uvw::AsyncHandle>();
-  handle->once<uvw::AsyncEvent>([fn = std::move(fn)](auto& event, auto& handle) -> void {
-    fn();
-    handle.close();
-  });
-  handle->send();
+  task_queue_.addQueuedTask(std::move(fn));
 }
 
 int ClientImpl::sendWrappedData(const proto::WrappedData &data, const transport::WriteHandler_t& write_handler) {
