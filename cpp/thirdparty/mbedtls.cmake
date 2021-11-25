@@ -5,6 +5,11 @@ if(MSVC)
 endif ()
 
 if (NOT TARGET mbedcrypto OR NOT TARGET mbedtls OR NOT TARGET mbedx509)
+    set(TEMP_MBEDTLS_PATCH_COMMAND "")
+    if (NOT WIN32)
+        set(TEMP_MBEDTLS_PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/mbedtls-fix-test-suite-for-alpine.patch)
+    endif()
+
     message("Can't find mbedtls. Add as an external project.")
     ExternalProject_Add(
             mbedtls_project
@@ -25,7 +30,7 @@ if (NOT TARGET mbedcrypto OR NOT TARGET mbedtls OR NOT TARGET mbedx509)
             "-DENABLE_PROGRAMS=OFF"
 
             UPDATE_COMMAND ""
-	    PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/mbedtls-fix-test-suite-for-alpine.patch
+            PATCH_COMMAND ${TEMP_MBEDTLS_PATCH_COMMAND}
             TEST_COMMAND ""
     )
 
