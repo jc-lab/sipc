@@ -127,7 +127,7 @@ signing {
 }
 
 tasks.withType(Sign) {
-    onlyIf { isReleaseVersion && (project.hasProperty('signing.gnupg.keyName') || project.hasProperty('signing.keyId')) }
+    onlyIf { gradle.ext.isReleaseVersion && (project.hasProperty('signing.gnupg.keyName') || project.hasProperty('signing.keyId')) }
 }
 
 uploadArchives {

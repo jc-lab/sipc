@@ -53,6 +53,8 @@ def getVersionFromGit = { ->
     }
 }
 
+gradle.ext.isReleaseVersion = isReleaseVersion
+
 allprojects {
     group 'kr.jclab.sipc'
     version "${getVersionFromGit}"
