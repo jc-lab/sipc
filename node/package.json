@@ -10,7 +10,8 @@
     "build:node": "tsc",
     "build:proto": "node util/gen-proto.js",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "prepack": "yarn build"
   },
   "repository": {
     "type": "git",
