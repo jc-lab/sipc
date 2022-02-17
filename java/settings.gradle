@@ -1,2 +1,4 @@
-rootProject.name = 'sipc-java'
+rootProject.name = 'sipc-java-parents'
 
+include 'sipc'
+include 'sipc-client-example'
