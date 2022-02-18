@@ -1,4 +1,4 @@
-name: test
+name: Build
 on: [push, pull_request]
 jobs:
   java-build:
@@ -71,4 +71,34 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
+  node-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["12", "14", "16"]
+    defaults:
+      run:
+        working-directory: node
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set Environment Variables
+        run: |
+          echo "runner_arch=$(uname -m)" >> $GITHUB_ENV
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Get protobuf version
+        run: |
+          npm install -g js-yaml
+          export protobuf_version="$(node util/get-protobuf-version.js)"
+          echo "protobuf_version=${protobuf_version}" | tee -a $GITHUB_ENV
+      - name: Setup protobuf
+        uses: arduino/setup-protoc@v1
+        with:
+          version: ${{ env.protobuf_version }}
+      - name: Install dependencies
+        run: yarn install
+      - name: Build
+        run: yarn build
