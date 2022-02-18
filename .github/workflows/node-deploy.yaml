@@ -1,0 +1,27 @@
+name: NPM Deploy
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  node-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Environment Variables
+        run: |
+          echo "runner_arch=$(uname -m)" >> $GITHUB_ENV
+          echo "package_version=${GITHUB_REF#refs/*/v}"
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Use Node.js 16
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+      - name: Set version
+        run: .ci/node-set-version.js --package-json package.json ${{ env.package_version }}
+      - name: Install dependencies
+        run: yarn install
+      - name: Build
+        run: yarn build
+      - name: Publish
+        run: npm publish --access=public
