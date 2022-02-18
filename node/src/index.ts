@@ -14,3 +14,7 @@ export {
   SipcHost,
   SipcPeer
 } from './host/sipc-host';
+
+export {
+  ProcessSipcHost
+} from './host/process-sipc-host';
