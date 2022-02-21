@@ -109,7 +109,7 @@ public class EventChannel {
             TPROG progressDefaultInstance,
             ProtoHandler<TPROG> progressHandler
     ) throws IOException {
-        return requestRaw(requestName, request.toByteArray(), (data) -> {
+        return requestRaw(requestName, request.toByteString(), (data) -> {
             if (progressDefaultInstance != null) {
                 try {
                     progressHandler.handle(
@@ -137,7 +137,7 @@ public class EventChannel {
 
     public CompletableFuture<byte[]> requestRaw(
             String requestName,
-            byte[] request,
+            ByteString request,
             Consumer<byte[]> progressHandler
     ) throws IOException {
         CallerRequestContext requestContext = new CallerRequestContext(this, UUID.randomUUID().toString(), progressHandler);
@@ -146,7 +146,7 @@ public class EventChannel {
                 Frames.EventRequest.newBuilder()
                         .setMethodName(requestName)
                         .setStreamId(requestContext.getStreamId())
-                        .setData(ByteString.copyFrom(request))
+                        .setData(request)
                         .build()
         );
         return requestContext.getFuture();
