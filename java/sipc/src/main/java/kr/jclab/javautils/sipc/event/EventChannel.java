@@ -1,8 +1,6 @@
 package kr.jclab.javautils.sipc.event;
 
-import com.google.protobuf.Any;
-import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.Message;
+import com.google.protobuf.*;
 import kr.jclab.javautils.sipc.ProtoMessageHouse;
 import kr.jclab.javautils.sipc.channel.IpcChannel;
 import kr.jclab.sipc.common.proto.Frames;
@@ -11,8 +9,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 public class EventChannel {
     private final Executor executor;
@@ -109,13 +109,44 @@ public class EventChannel {
             TPROG progressDefaultInstance,
             ProtoHandler<TPROG> progressHandler
     ) throws IOException {
-        CallerRequestContext<TRES, TPROG> requestContext = new CallerRequestContext<TRES, TPROG>(this, UUID.randomUUID().toString(), responseDefaultInstance, progressDefaultInstance, progressHandler);
+        return requestRaw(requestName, request.toByteArray(), (data) -> {
+            if (progressDefaultInstance != null) {
+                try {
+                    progressHandler.handle(
+                            (TPROG) progressDefaultInstance.newBuilderForType()
+                                    .mergeFrom(data)
+                                    .build()
+                    );
+                } catch (InvalidProtocolBufferException e) {
+                    e.printStackTrace();
+                }
+            }
+        })
+                .thenCompose((data) -> {
+                    try {
+                        return CompletableFuture.completedFuture((TRES) responseDefaultInstance.newBuilderForType()
+                                .mergeFrom(data)
+                                .build());
+                    } catch (InvalidProtocolBufferException e) {
+                        CompletableFuture<TRES> f = new CompletableFuture<>();
+                        f.completeExceptionally(e);
+                        return f;
+                    }
+                });
+    }
+
+    public CompletableFuture<byte[]> requestRaw(
+            String requestName,
+            byte[] request,
+            Consumer<byte[]> progressHandler
+    ) throws IOException {
+        CallerRequestContext requestContext = new CallerRequestContext(this, UUID.randomUUID().toString(), progressHandler);
         this.runningCalls.put(requestContext.getStreamId(), requestContext);
         this.sendApplicationData(
                 Frames.EventRequest.newBuilder()
                         .setMethodName(requestName)
                         .setStreamId(requestContext.getStreamId())
-                        .setData(request.toByteString())
+                        .setData(ByteString.copyFrom(request))
                         .build()
         );
         return requestContext.getFuture();
