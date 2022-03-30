@@ -58,9 +58,9 @@ export class ClientContext {
     const serialized = message.serializeBinary();
     const buffer = Buffer.alloc(4);
     const totalSize = serialized.length + 4;
-    buffer.writeUint8(totalSize & 0xff, 0);
-    buffer.writeUint16LE(totalSize >> 8, 1);
-    buffer.writeUint8(type, 3);
+    buffer.writeUInt8(totalSize & 0xff, 0);
+    buffer.writeUInt16LE(totalSize >> 8, 1);
+    buffer.writeUInt8(type, 3);
     return this._doWrite(Buffer.concat([buffer, serialized]));
   }
 
