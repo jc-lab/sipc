@@ -34,7 +34,7 @@ export class PacketReader {
     if (!this.chunk) throw new Error('Illegal state');
 
     let length = this.chunk.readUInt8(this.offset);
-    length |= this.chunk.readUint16LE(this.offset + 1) << 8;
+    length |= this.chunk.readUInt16LE(this.offset + 1) << 8;
     const frameType = this.chunk.readUInt8(this.offset + 3);
 
     //next item spans more chunks than we have
