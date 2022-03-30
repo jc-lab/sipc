@@ -185,7 +185,7 @@ export abstract class AbstractIpcChannel extends events.EventEmitter implements 
   private generateSecret(type: string, counter: bigint, size: number): Buffer {
     const buf = Buffer.alloc(type.length + 8);
     buf.write(type, 0, 'utf8');
-    buf.writeBigUint64LE(counter, type.length);
+    buf.writeBigUInt64LE(counter, type.length);
     const mac = crypto.createHmac('sha256', this._sharedMasterSecret);
     mac.update(buf);
     const output = mac.digest();
