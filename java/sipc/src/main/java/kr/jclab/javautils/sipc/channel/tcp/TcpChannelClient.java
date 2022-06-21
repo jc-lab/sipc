@@ -116,8 +116,8 @@ public class TcpChannelClient implements Closeable {
                                 frameDecoder.recvAfterReadRaw(this.ipcChannel);
                             }
                         }
+                        selectedKeys.remove();
                     }
-                    selectedKeys.remove();
                 }
                 while (!this.commandQueue.isEmpty()) {
                     int command = this.commandQueue.pop();
