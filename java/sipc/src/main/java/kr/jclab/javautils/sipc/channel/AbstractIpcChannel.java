@@ -196,7 +196,7 @@ public abstract class AbstractIpcChannel implements IpcChannel {
     }
 
     @Override
-    public void sendWrappedData(Frames.WrappedData wrappedData) throws IOException {
+    public synchronized void sendWrappedData(Frames.WrappedData wrappedData) throws IOException {
         Frames.EncryptedWrappedData encryptedWrappedData = wrapDataToSend(wrappedData.toByteArray());
         this.sendFrame(encryptedWrappedData);
     }
@@ -221,7 +221,7 @@ public abstract class AbstractIpcChannel implements IpcChannel {
         }
     }
 
-    public Frames.EncryptedWrappedData wrapDataToSend(byte[] data) {
+    private Frames.EncryptedWrappedData wrapDataToSend(byte[] data) {
         long counter = this.myCounter++;
         byte[] iv = generateSecret(this.serverMode ? "siv" : "civ", counter, 16);
         byte[] key = generateSecret(this.serverMode ? "sky" : "cky", counter, 32);

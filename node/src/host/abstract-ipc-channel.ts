@@ -4,6 +4,7 @@ import {ClientContext} from './client-context';
 import * as crypto from 'crypto';
 import * as events from 'events';
 import * as cc from 'commons-crypto';
+import { Synchronized } from 'node-synchronized';
 import {
   AlertFrame,
   ClientHelloFrame,
@@ -36,6 +37,7 @@ export abstract class AbstractIpcChannel extends events.EventEmitter implements 
 
   private _myCounter: bigint = 0n;
   private _peerCounter: bigint = 0n;
+  private _sendBlock: Synchronized = new Synchronized();
 
   private _wrappedDataHandlers: Record<string, WrappedDataHandler<any>> = {};
 
@@ -115,8 +117,10 @@ export abstract class AbstractIpcChannel extends events.EventEmitter implements 
   }
 
   public sendWrappedData(message: WrappedData): Promise<void> {
-    return this.wrapDataToSend(message.serializeBinary())
-      .then((wrapped) => this.sendFrame(wrapped));
+    return this._sendBlock.synchronized(() =>
+      this.wrapDataToSend(message.serializeBinary())
+        .then((wrapped) => this.sendFrame(wrapped))
+    );
   }
 
   public registerWrappedData<T extends Message>(defaultObject: T, deserializer: (payload: Uint8Array) => T | Promise<T>, handler: (payload: T) => Promise<void>) {
