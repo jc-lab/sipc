@@ -125,7 +125,7 @@ public class PeeredIpcChannel implements IpcChannel {
     }
 
     @Override
-    public void sendWrappedData(Frames.WrappedData wrappedData) throws IOException {
+    public synchronized void sendWrappedData(Frames.WrappedData wrappedData) throws IOException {
         remote.feedWrappedData(wrappedData);
     }
 

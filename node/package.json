@@ -47,6 +47,7 @@
     "@types/uuid": "^8.3.4",
     "bson": "^4.6.1",
     "commons-crypto": "^0.2.0",
+    "node-synchronized": "^1.0.1",
     "uuid": "^8.3.2"
   }
 }
