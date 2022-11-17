@@ -24,8 +24,7 @@ jobs:
         run: node ../.ci/node-set-version.js --package-json package.json ${{ env.package_version }}
       - name: Get protobuf version
         run: |
-          npm install -g js-yaml
-          export protobuf_version="$(node util/get-protobuf-version.js)"
+          export protobuf_version="$(sh ./.ci/node-get-protobuf-version.sh)"
           echo "protobuf_version=${protobuf_version}" | tee -a $GITHUB_ENV
       - name: Setup protobuf
         uses: arduino/setup-protoc@v1

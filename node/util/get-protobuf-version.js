@@ -1,28 +1,9 @@
 const fs = require('fs');
-const path = require('path');
-const childProcess = require('child_process');
+const yarnLockParse = require('@yarn-tool/yarnlock-parse');
 
-function parseYaml(filename) {
-  try {
-    throw new Error();
-    const yaml = require('js-yaml');
-    return new Promise((resolve, reject) => {
-      yaml.loadAll(
-        fs.readFileSync('yarn.lock', { encoding: 'utf8' }),
-        (doc) => resolve(doc)
-      );
-    });
-  } catch (e) {
-    return Promise.resolve(JSON.parse(childProcess.execSync(`js-yaml ${filename}`, {
-      encoding: 'utf8'
-    })));
-  }
-}
-
-parseYaml('yarn.lock')
-  .then((doc) => {
-    const key = Object.keys(doc)
-      .find(v => v.startsWith('google-protobuf@'));
-    if (!key) return ;
-    console.log(doc[key].version);
-  });
+const parsed = yarnLockParse.yarnLockParse(fs.readFileSync('yarn.lock', { encoding: 'utf8' }));
+const key = Object.keys(parsed.data).filter(v => /^google-protobuf/.test(v))
+    .sort()
+    .reverse()[0];
+const item = parsed.data[key];
+console.log(item.version);

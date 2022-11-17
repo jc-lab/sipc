@@ -74,8 +74,9 @@ jobs:
   node-build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node-version: ["12", "14", "16"]
+        node-version: ["14", "16", "18"]
     defaults:
       run:
         working-directory: node
@@ -91,8 +92,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Get protobuf version
         run: |
-          npm install -g js-yaml
-          export protobuf_version="$(node util/get-protobuf-version.js)"
+          export protobuf_version="$(sh ./.ci/node-get-protobuf-version.sh)"
           echo "protobuf_version=${protobuf_version}" | tee -a $GITHUB_ENV
       - name: Setup protobuf
         uses: arduino/setup-protoc@v1
