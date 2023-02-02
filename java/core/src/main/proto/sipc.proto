@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package kr.jclab.sipc;
+option java_package = "kr.jclab.sipc.proto";
+option java_outer_classname = "SipcProto";
+
+enum TransportType {
+  kUnknown = 0;
+  kUnixDomainSocket = 1;
+  kWindowsNamedPipe = 2;
+}
+
+message ConnectInfo {
+  string connection_id = 1;
+  TransportType transport_type = 2;
+  string transport_address = 3;
+  bytes public_key = 4;
+}
+
+message ClientHelloPayload {
+  string connection_id = 1;
+}
