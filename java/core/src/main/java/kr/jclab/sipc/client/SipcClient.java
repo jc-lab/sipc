@@ -5,6 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import kr.jclab.sipc.OsDetector;
+import kr.jclab.sipc.client.internal.NamedPipeSipcClient;
 import kr.jclab.sipc.client.internal.SipcClientContext;
 import kr.jclab.sipc.client.internal.UnixDomainSocketSipcClient;
 import kr.jclab.sipc.internal.EventLoopHolder;
@@ -62,7 +63,7 @@ public abstract class SipcClient {
                 if (!OsDetector.IS_WINDOWS) {
                     throw new RuntimeException("Invalid transport type this OS. type=" + connectInfo.getTransportType());
                 }
-                return new UnixDomainSocketSipcClient(eventLoopHolder, connectInfo, handler);
+                return new NamedPipeSipcClient(eventLoopHolder, connectInfo, handler);
             case kUnixDomainSocket:
                 if (OsDetector.IS_WINDOWS) {
                     throw new RuntimeException("Invalid transport type this OS. type=" + connectInfo.getTransportType());

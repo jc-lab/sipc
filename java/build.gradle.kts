@@ -5,7 +5,7 @@ plugins {
 }
 
 val projectGroup = "kr.jclab.sipc"
-val projectVersion = "1.0.0-rc1"
+val projectVersion = "0.2.0-rc1"
 
 group = projectGroup
 version = projectVersion
@@ -13,6 +13,12 @@ version = projectVersion
 allprojects {
     group = projectGroup
     version = projectVersion
+
+    repositories {
+        maven {
+            url = uri("https://s01.oss.sonatype.org/content/repositories/releases")
+        }
+    }
 }
 
 repositories {

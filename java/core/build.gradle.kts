@@ -21,6 +21,7 @@ java {
 
 val nettyVersion = "4.1.87.Final"
 val projectProtobufVersion = "3.19.4"
+val nettyIocpVersion = "0.0.3"
 
 dependencies {
     testCompileOnly("org.projectlombok:lombok:1.18.24")
@@ -41,6 +42,7 @@ dependencies {
     api("io.netty:netty-transport-native-unix-common:${nettyVersion}")
     api("io.netty:netty-transport-native-epoll:${nettyVersion}")
     api("io.netty:netty-transport-native-kqueue:${nettyVersion}")
+    api("kr.jclab.netty:netty-transport-classes-iocp:${nettyIocpVersion}")
 
     implementation("com.google.protobuf:protobuf-java:${projectProtobufVersion}")
     implementation("com.google.guava:guava:31.1-jre")
@@ -57,6 +59,7 @@ dependencies {
     testImplementation("io.netty:netty-transport-native-epoll:${nettyVersion}:linux-aarch_64")
     testImplementation("io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-x86_64")
     testImplementation("io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-aarch_64")
+    testImplementation("kr.jclab.netty:netty-transport-native-iocp:${nettyIocpVersion}")
 }
 
 protobuf {

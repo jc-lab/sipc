@@ -43,7 +43,7 @@ public class SipcChild {
             throw new IllegalStateException("already process attached");
         }
         this.process = process;
-        this.pid = PidAccessor.getPid(process);
+        this.pid = PidAccessor.getPid(process, this.parent.serverContext.getWindowsNativeSupport());
         start();
     }
 

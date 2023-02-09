@@ -84,7 +84,7 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        handshakeFailed(ctx, "Connection was closed ${ctx.channel()}");
+        handshakeFailed(ctx, "Connection was closed " + ctx.channel());
         super.channelUnregistered(ctx);
     }
 
@@ -103,37 +103,6 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
 
         return null;
     }
-
-//    private void sendNoiseStaticKeyAsPayload(ChannelHandlerContext ctx) {
-//        // only send the Noise static key once
-//        if (sentNoiseKeyPayload) return
-//                sentNoiseKeyPayload = true
-//
-//        // the payload consists of the identity public key, and the signature of the noise static public key
-//        // the actual noise static public key is sent later as part of the XX handshake
-//
-//        // get identity public key
-//        val identityPublicKey: ByteArray = marshalPublicKey(localKey.publicKey())
-//
-//        // get noise static public key signature
-//        val localNoiseStaticKeySignature =
-//                localKey.sign(noiseSignaturePhrase(localNoiseState))
-//
-//        // generate an appropriate protobuf element
-//        val noiseHandshakePayload =
-//                Spipe.NoiseHandshakePayload.newBuilder()
-//                        .setLibp2PKey(ByteString.copyFrom(identityPublicKey))
-//                        .setNoiseStaticKeySignature(ByteString.copyFrom(localNoiseStaticKeySignature))
-//                        .setLibp2PData(ByteString.EMPTY)
-//                        .setLibp2PDataSignature(ByteString.EMPTY)
-//                        .build()
-//                        .toByteArray()
-//
-//        // create the message with the signed payload -
-//        // verification happens once the noise static key is shared
-//        log.debug("Sending signed Noise static public key as payload")
-//        sendNoiseMessage(ctx, noiseHandshakePayload)
-//    }
 
     private void sendNoiseMessage(ChannelHandlerContext ctx, byte[] msg) throws ShortBufferException {
         int msgLength = (msg != null) ? msg.length : 0;

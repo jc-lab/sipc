@@ -1,8 +1,7 @@
 package kr.jclab.sipc.server.internal;
 
-import io.netty.channel.unix.PeerCredentials;
 import io.netty.util.AttributeKey;
 
 public class ServerConstants {
-    public static final AttributeKey<PeerCredentials> ATTR_PEER_CREDENTIALS = AttributeKey.newInstance("peerCredentials");
+    public static final AttributeKey<Integer> ATTR_PEER_PID = AttributeKey.newInstance("peerPid");
 }

@@ -1,14 +1,11 @@
 package kr.jclab.sipc.server.internal;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.unix.PeerCredentials;
 import kr.jclab.sipc.internal.InvalidConnectionInfoException;
 import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.SipcChild;
 import lombok.Getter;
-
-import java.util.concurrent.CompletableFuture;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -17,7 +14,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class SipcChildChannelContext {
     private final SipcServerContext serverContext;
     private final Channel channel;
-    private final PeerCredentials peerCredentials;
+    private final int pid;
 
     public HandshakeState state = HandshakeState.HANDSHAKEING_1;
     private String connectionId = null;
@@ -30,10 +27,10 @@ public class SipcChildChannelContext {
         CLOSED
     }
 
-    public SipcChildChannelContext(SipcServerContext serverContext, Channel channel, PeerCredentials peerCredentials) {
+    public SipcChildChannelContext(SipcServerContext serverContext, Channel channel, int pid) {
         this.serverContext = serverContext;
         this.channel = channel;
-        this.peerCredentials = peerCredentials;
+        this.pid = pid;
     }
 
     public void onClientHello(SipcProto.ClientHelloPayload payload) {
@@ -42,7 +39,7 @@ public class SipcChildChannelContext {
         if (sipcChild == null) {
             throw new InvalidConnectionInfoException();
         }
-        if (sipcChild.getPid() != peerCredentials.pid()) {
+        if (sipcChild.getPid() != pid) {
             throw new InvalidConnectionInfoException();
         }
         this.sipcChild = sipcChild;

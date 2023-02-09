@@ -3,7 +3,6 @@ package kr.jclab.sipc.server.internal;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.unix.PeerCredentials;
 import kr.jclab.sipc.internal.noise.*;
 import kr.jclab.sipc.proto.SipcProto;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +18,10 @@ public abstract class ServerChannelInitializer<C extends Channel> extends Channe
         this.serverContext = serverContext;
     }
 
-    protected void doInitChannel(Channel ch, PeerCredentials peerCredentials) throws NoSuchAlgorithmException {
-        ch.attr(ServerConstants.ATTR_PEER_CREDENTIALS).set(peerCredentials);
+    protected void doInitChannel(Channel ch, int pid) throws NoSuchAlgorithmException {
+        ch.attr(ServerConstants.ATTR_PEER_PID).set(pid);
 
-        final SipcChildChannelContext sipcChildChannelContext = new SipcChildChannelContext(serverContext, ch, peerCredentials);
+        final SipcChildChannelContext sipcChildChannelContext = new SipcChildChannelContext(serverContext, ch, pid);
 
         NoiseNXHandshake handshake = new NoiseNXHandshake(NoiseRole.RESPONDER, new NoiseHandler() {
             @Override

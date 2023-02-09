@@ -1,13 +1,14 @@
 package kr.jclab.sipc.internal;
 
 import kr.jclab.sipc.OsDetector;
+import kr.jclab.sipc.platform.WindowsNativeSupport;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class PidAccessor {
-    public static long getPid(Process p) {
+    public static long getPid(Process p, WindowsNativeSupport windowsNativeSupport) {
         try {
             Method method = Process.class.getDeclaredMethod("pid");
             return (Long) method.invoke(p);
@@ -21,8 +22,10 @@ public class PidAccessor {
         try {
             if (p.getClass().getName().equals("java.lang.Win32Process") ||
                     (OsDetector.IS_WINDOWS && p.getClass().getName().equals("java.lang.ProcessImpl"))) {
-                WindowsJnaSupport windowsJnaSupport = JnaSupport.getWindowsJnaSupport();
-                return windowsJnaSupport.getPidFromProcess(p);
+                if (windowsNativeSupport == null) {
+                    throw new RuntimeException("require windows native support");
+                }
+                return windowsNativeSupport.getPidFromProcess(p);
             }
             if (p.getClass().getName().equals("java.lang.UNIXProcess"))
             {

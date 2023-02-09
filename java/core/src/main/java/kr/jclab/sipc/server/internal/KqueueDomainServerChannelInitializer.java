@@ -13,6 +13,6 @@ public class KqueueDomainServerChannelInitializer extends ServerChannelInitializ
 
     @Override
     protected void initChannel(KQueueDomainSocketChannel ch) throws Exception {
-        this.doInitChannel(ch, ch.peerCredentials());
+        this.doInitChannel(ch, ch.peerCredentials().pid());
     }
 }

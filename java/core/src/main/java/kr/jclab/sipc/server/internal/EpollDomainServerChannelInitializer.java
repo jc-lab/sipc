@@ -13,6 +13,6 @@ public class EpollDomainServerChannelInitializer extends ServerChannelInitialize
 
     @Override
     protected void initChannel(EpollDomainSocketChannel ch) throws Exception {
-        this.doInitChannel(ch, ch.peerCredentials());
+        this.doInitChannel(ch, ch.peerCredentials().pid());
     }
 }

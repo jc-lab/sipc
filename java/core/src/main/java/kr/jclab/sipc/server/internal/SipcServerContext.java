@@ -2,8 +2,11 @@ package kr.jclab.sipc.server.internal;
 
 import kr.jclab.noise.protocol.DHState;
 import kr.jclab.noise.protocol.Noise;
+import kr.jclab.sipc.OsDetector;
 import kr.jclab.sipc.internal.EventLoopHolder;
 import kr.jclab.sipc.internal.NotifyMap;
+import kr.jclab.sipc.internal.WindowsJnaSupport;
+import kr.jclab.sipc.platform.WindowsNativeSupport;
 import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.SipcChild;
 import lombok.Getter;
@@ -18,9 +21,10 @@ import java.util.concurrent.TimeUnit;
 public class SipcServerContext {
     private final EventLoopHolder eventLoopHolder;
     private final SipcProto.TransportType transportType;
-    private final String transportAddress;
 
     private final DHState localPrivateKey;
+    private final WindowsNativeSupport windowsNativeSupport;
+
     private final NotifyMap<String, SipcChild> childMapByConnectionId = new NotifyMap<>();
 
     @Getter
@@ -31,7 +35,7 @@ public class SipcServerContext {
             EventLoopHolder eventLoopHolder,
             DHState localPrivateKey,
             SipcProto.TransportType transportType,
-            String transportAddress
+            WindowsNativeSupport windowsNativeSupport
     ) throws NoSuchAlgorithmException {
         this.eventLoopHolder = eventLoopHolder;
         if (localPrivateKey == null) {
@@ -40,7 +44,13 @@ public class SipcServerContext {
         }
         this.localPrivateKey = localPrivateKey;
         this.transportType = transportType;
-        this.transportAddress = transportAddress;
+        if (windowsNativeSupport != null) {
+            this.windowsNativeSupport = windowsNativeSupport;
+        } else if (OsDetector.IS_WINDOWS) {
+            this.windowsNativeSupport = new WindowsJnaSupport();
+        } else {
+            this.windowsNativeSupport = null;
+        }
     }
 
     public void shutdown() {
