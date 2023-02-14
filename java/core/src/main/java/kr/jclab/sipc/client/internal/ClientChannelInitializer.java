@@ -3,6 +3,7 @@ package kr.jclab.sipc.client.internal;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
+import kr.jclab.sipc.internal.PacketCoder;
 import kr.jclab.sipc.internal.noise.*;
 import kr.jclab.sipc.proto.SipcProto;
 
@@ -48,6 +49,8 @@ public class ClientChannelInitializer extends ChannelInitializer<Channel> {
         });
         handshake.start();
 
+        ch.pipeline().addLast(new PacketCoder.Encoder());
+        ch.pipeline().addLast(new PacketCoder.Decoder());
         ch.pipeline().addLast(NoiseNXHandshake.HANDLER_NAME, handshake);
         ch.pipeline().addLast(clientContext.getChannelHandler());
     }

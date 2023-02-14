@@ -3,6 +3,7 @@ syntax = "proto3";
 package kr.jclab.sipc;
 option java_package = "kr.jclab.sipc.proto";
 option java_outer_classname = "SipcProto";
+option go_package = "github.com/jc-lab/sipc/go/sipc_proto";
 
 enum TransportType {
   kUnknown = 0;
