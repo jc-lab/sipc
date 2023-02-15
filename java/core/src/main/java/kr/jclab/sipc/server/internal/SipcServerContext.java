@@ -4,18 +4,15 @@ import kr.jclab.noise.protocol.DHState;
 import kr.jclab.noise.protocol.Noise;
 import kr.jclab.sipc.OsDetector;
 import kr.jclab.sipc.internal.EventLoopHolder;
-import kr.jclab.sipc.internal.NotifyMap;
 import kr.jclab.sipc.internal.WindowsJnaSupport;
 import kr.jclab.sipc.platform.WindowsNativeSupport;
 import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.SipcChild;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 @Getter
 public class SipcServerContext {
@@ -25,7 +22,7 @@ public class SipcServerContext {
     private final DHState localPrivateKey;
     private final WindowsNativeSupport windowsNativeSupport;
 
-    private final NotifyMap<String, SipcChild> childMapByConnectionId = new NotifyMap<>();
+    private final ConcurrentHashMap<String, SipcChild> childMapByConnectionId = new ConcurrentHashMap<>();
 
     @Getter
     private int handshakeTimeout = 30000;

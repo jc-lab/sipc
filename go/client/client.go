@@ -38,8 +38,8 @@ type SipcClient struct {
 	handshakeState *noise.HandshakeState
 	handshakeCh    chan error
 
-	cs1        *noise.CipherState
-	cs2        *noise.CipherState
+	csServer   *noise.CipherState
+	csClient   *noise.CipherState
 	readBuffer *bytes.Buffer
 }
 
@@ -48,7 +48,7 @@ func NewSipcClient(connectInfo string) (*SipcClient, error) {
 		HandshakeTimeout: time.Second * 60,
 		state:            kStateIdle,
 	}
-	connectInfoBinary, err := base64.StdEncoding.DecodeString(connectInfo)
+	connectInfoBinary, err := base64.URLEncoding.DecodeString(connectInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +100,8 @@ func (client *SipcClient) Start() error {
 			return nil, -1
 		}
 		if cs1 != nil || cs2 != nil {
-			client.cs1 = cs1
-			client.cs2 = cs2
+			client.csServer = cs2
+			client.csClient = cs1
 			client.state = kStateEstablished
 			client.readBuffer = bytes.NewBuffer(make([]byte, 1024))
 			client.readBuffer.Reset()
@@ -171,7 +171,7 @@ func (client *SipcClient) Read(p []byte) (n int, err error) {
 		if err != nil {
 			return nil, err
 		}
-		return client.cs1.Decrypt(nil, nil, buf)
+		return client.csServer.Decrypt(nil, nil, buf)
 	})
 }
 
@@ -180,7 +180,7 @@ func (client *SipcClient) Write(p []byte) (n int, err error) {
 		return -1, sipc_error.NOT_CONNECTED
 	}
 
-	ct, err := client.cs2.Encrypt(nil, nil, p)
+	ct, err := client.csClient.Encrypt(nil, nil, p)
 	if err != nil {
 		return 0, err
 	}

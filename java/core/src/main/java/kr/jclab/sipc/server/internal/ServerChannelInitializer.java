@@ -27,14 +27,14 @@ public abstract class ServerChannelInitializer<C extends Channel> extends Channe
         NoiseNXHandshake handshake = new NoiseNXHandshake(NoiseRole.RESPONDER, new NoiseHandler() {
             @Override
             public void onReadMessage(NoiseNXHandshake handshake, byte[] payload) {
-                if (sipcChildChannelContext.state == SipcChildChannelContext.HandshakeState.HANDSHAKEING_1) {
+                if (sipcChildChannelContext.getState() == SipcChildChannelContext.HandshakeState.HANDSHAKEING_1) {
                     try {
                         SipcProto.ClientHelloPayload clientHelloPayload = SipcProto.ClientHelloPayload.newBuilder()
                                 .mergeFrom(payload)
                                 .build();
                         sipcChildChannelContext.onClientHello(clientHelloPayload);
                     } catch (Exception e) {
-                        sipcChildChannelContext.state = SipcChildChannelContext.HandshakeState.CLOSED;
+                        sipcChildChannelContext.onHandshakeFailure();
                         throw new NoiseHandshakeException(e);
                     }
                 }
@@ -42,9 +42,7 @@ public abstract class ServerChannelInitializer<C extends Channel> extends Channe
 
             @Override
             public void onHandshakeComplete(NoiseNXHandshake handshake, NoiseSecureChannelSession session) {
-                sipcChildChannelContext.state = SipcChildChannelContext.HandshakeState.HANDSHAKED;
-                ch.pipeline().addLast(sipcChildChannelContext.getSipcChild().getChannelHandler());
-                sipcChildChannelContext.onHandshakeComplete();
+                sipcChildChannelContext.noiseHandshakeComplete(ch);
             }
         });
 

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func main() {
+func main2() {
 	sipcServer, err := server.NewSipcServer(server.SipcServerConfig{})
 	if err != nil {
 		log.Fatal(err)
@@ -23,6 +23,11 @@ func main() {
 	sipcChild.AttachProcessWithPid(os.Getpid())
 	go ClientApp(sipcChild.GetEncodedConnectInfo())
 	ServerApp(sipcChild)
+}
+
+func main() {
+	println("PID : ", os.Getpid())
+	ClientApp("CiQzNmYyNzFhNC1mN2ZiLTRhNzctOWRmYy1iNTk3YjQ1YWFhMzUQARouL3RtcC80NjE0NGRmNi1iZWQ3LTQzMmUtYTI1My0yNzQ4ODUxZmY4Njkuc29jayIgocyC-2PHSH3Eqd6iB7j2j9X4fP1sovbfr2QcDyyRn38=")
 }
 
 func ServerApp(sipcChild *server.SipcChild) {

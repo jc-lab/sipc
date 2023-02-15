@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import kr.jclab.sipc.exception.SipcHandshakeTimeoutException;
 import kr.jclab.sipc.exception.NotYetConnectedException;
+import kr.jclab.sipc.internal.DeferredInt;
 import kr.jclab.sipc.internal.PidAccessor;
 import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.internal.SipcChildChannelContext;
@@ -25,7 +26,7 @@ public class SipcChild {
     private final ChannelHandler channelHandler;
 
     @Getter
-    private long pid = 0;
+    private DeferredInt pid = new DeferredInt();
     @Getter
     private Process process = null;
 
@@ -39,19 +40,19 @@ public class SipcChild {
 
     public void attachProcess(Process process) {
         Preconditions.checkNotNull(process);
-        if (this.process != null || this.pid != 0) {
+        if (this.process != null || this.getPid().get() != 0) {
             throw new IllegalStateException("already process attached");
         }
         this.process = process;
-        this.pid = PidAccessor.getPid(process, this.parent.serverContext.getWindowsNativeSupport());
+        this.pid.set((int) PidAccessor.getPid(process, this.parent.serverContext.getWindowsNativeSupport()));
         start();
     }
 
-    public void attachProcess(long pid) {
-        if (this.process != null || this.pid != 0) {
+    public void attachProcess(int pid) {
+        if (this.process != null || this.getPid().get() != 0) {
             throw new IllegalStateException("already process attached");
         }
-        this.pid = pid;
+        this.pid.set(pid);
         start();
     }
 

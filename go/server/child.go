@@ -41,8 +41,8 @@ type SipcChild struct {
 	handshakeCh chan error
 
 	connection net.Conn
-	cs1        *noise.CipherState
-	cs2        *noise.CipherState
+	csServer   *noise.CipherState
+	csClient   *noise.CipherState
 	readBuffer *bytes.Buffer
 }
 
@@ -62,7 +62,7 @@ func (server *SipcServer) createChild() (*SipcChild, error) {
 	if err != nil {
 		return nil, err
 	}
-	child.encodedConnectInfo = base64.StdEncoding.EncodeToString(encoded)
+	child.encodedConnectInfo = base64.URLEncoding.EncodeToString(encoded)
 
 	server.childMap[child.connectInfo.ConnectionId] = child
 
@@ -135,7 +135,7 @@ func (child *SipcChild) Read(p []byte) (n int, err error) {
 		if err != nil {
 			return nil, err
 		}
-		return child.cs2.Decrypt(nil, nil, buf)
+		return child.csClient.Decrypt(nil, nil, buf)
 	})
 }
 
@@ -144,7 +144,7 @@ func (child *SipcChild) Write(p []byte) (n int, err error) {
 		return -1, sipc_error.NOT_CONNECTED
 	}
 
-	ct, err := child.cs1.Encrypt(nil, nil, p)
+	ct, err := child.csServer.Encrypt(nil, nil, p)
 	if err != nil {
 		return 0, err
 	}
@@ -169,8 +169,8 @@ func (child *SipcChild) Close() error {
 
 func (child *SipcChild) handshakeSuccess(conn net.Conn, cs1 *noise.CipherState, cs2 *noise.CipherState) {
 	child.connection = conn
-	child.cs1 = cs1
-	child.cs2 = cs2
+	child.csServer = cs2
+	child.csClient = cs1
 	child.readBuffer = bytes.NewBuffer(make([]byte, 1024))
 	child.readBuffer.Reset()
 	child.state = kStateEstablished

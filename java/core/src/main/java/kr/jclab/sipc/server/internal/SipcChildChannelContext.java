@@ -1,7 +1,6 @@
 package kr.jclab.sipc.server.internal;
 
 import io.netty.channel.Channel;
-import io.netty.channel.unix.PeerCredentials;
 import kr.jclab.sipc.internal.InvalidConnectionInfoException;
 import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.SipcChild;
@@ -16,7 +15,7 @@ public class SipcChildChannelContext {
     private final Channel channel;
     private final int pid;
 
-    public HandshakeState state = HandshakeState.HANDSHAKEING_1;
+    private HandshakeState state = HandshakeState.HANDSHAKEING_1;
     private String connectionId = null;
     private SipcChild sipcChild = null;
 
@@ -39,18 +38,31 @@ public class SipcChildChannelContext {
         if (sipcChild == null) {
             throw new InvalidConnectionInfoException();
         }
-        if (sipcChild.getPid() != pid) {
-            throw new InvalidConnectionInfoException();
-        }
         this.sipcChild = sipcChild;
         this.connectionId = payload.getConnectionId();
         this.state = SipcChildChannelContext.HandshakeState.HANDSHAKEING_2;
+
+        int expectedPid = this.sipcChild.getPid().get();
+        if (expectedPid != 0 && expectedPid != pid) {
+            throw new InvalidConnectionInfoException();
+        }
     }
 
-    public void onHandshakeComplete() {
+    public void noiseHandshakeComplete(Channel channel) {
         checkNotNull(this.connectionId);
         checkNotNull(this.sipcChild);
 
-        this.sipcChild.internalAttachChannel(this);
+        this.sipcChild.getPid().compute((expectedPid) -> {
+            if (expectedPid == pid) {
+                this.sipcChild.internalAttachChannel(this);
+                channel.pipeline().addLast(this.sipcChild.getChannelHandler());
+            } else {
+                channel.pipeline().fireExceptionCaught(new InvalidConnectionInfoException());
+            }
+        });
+    }
+
+    public void onHandshakeFailure() {
+        this.state = HandshakeState.CLOSED;
     }
 }
