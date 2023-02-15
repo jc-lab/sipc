@@ -6,6 +6,7 @@ import (
 )
 
 type Future[T any] interface {
+	IsFinished() bool
 	Wait(timeout time.Duration) (*T, bool)
 	Chan() chan *T
 }
@@ -25,6 +26,10 @@ func NewPromise[T any]() *Promise[T] {
 		mutex: m,
 		cond:  sync.NewCond(m),
 	}
+}
+
+func (p *Promise[T]) IsFinished() bool {
+	return p.finished
 }
 
 func (p *Promise[T]) Complete(value *T) {
