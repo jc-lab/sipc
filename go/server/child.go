@@ -1,0 +1,185 @@
+package server
+
+import (
+	"bytes"
+	"encoding/base64"
+	"errors"
+	"github.com/flynn/noise"
+	"github.com/google/uuid"
+	"github.com/jc-lab/sipc/go/sipc_error"
+	"github.com/jc-lab/sipc/go/sipc_proto"
+	"github.com/jc-lab/sipc/go/util"
+	"github.com/jc-lab/sipc/internal/promise"
+	"google.golang.org/protobuf/proto"
+	"io"
+	"net"
+	"os"
+	"os/exec"
+	"time"
+)
+
+type State int
+
+const (
+	kStateConnecting State = 1 + iota
+	kStateHandshake
+	kStateEstablished
+	kStateClosed
+)
+
+type SipcChild struct {
+	io.ReadWriteCloser
+
+	server *SipcServer
+
+	connectInfo        *sipc_proto.ConnectInfo
+	encodedConnectInfo string
+
+	process    *os.Process
+	pidPromise *promise.Promise[int]
+
+	state       State
+	handshakeCh chan error
+
+	connection net.Conn
+	csServer   *noise.CipherState
+	csClient   *noise.CipherState
+	readBuffer *bytes.Buffer
+}
+
+func (server *SipcServer) createChild() (*SipcChild, error) {
+	child := &SipcChild{
+		connectInfo: &sipc_proto.ConnectInfo{
+			TransportType:    server.transport.TransportType(),
+			TransportAddress: server.listener.Addr().String(),
+			ConnectionId:     uuid.NewString(),
+			PublicKey:        server.localStaticKey.Public,
+		},
+		server:      server,
+		handshakeCh: make(chan error, 1),
+		state:       kStateConnecting,
+		pidPromise:  promise.NewPromise[int](),
+	}
+	encoded, err := proto.Marshal(child.connectInfo)
+	if err != nil {
+		return nil, err
+	}
+	child.encodedConnectInfo = base64.URLEncoding.EncodeToString(encoded)
+
+	server.childMap[child.connectInfo.ConnectionId] = child
+
+	return child, nil
+}
+
+func (server *SipcServer) CreateProcess(cmd *exec.Cmd) (*SipcChild, error) {
+	child, err := server.createChild()
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.Env = append(cmd.Env, "SIPC_V1_CONNECT_INFO="+child.GetEncodedConnectInfo())
+	err = cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	err = child.AttachProcess(cmd.Process)
+
+	return child, err
+}
+
+func (server *SipcServer) PrepareProcess() (*SipcChild, error) {
+	child, err := server.createChild()
+	if err != nil {
+		return nil, err
+	}
+
+	return child, nil
+}
+
+func (child *SipcChild) GetEncodedConnectInfo() string {
+	return child.encodedConnectInfo
+}
+
+func (child *SipcChild) AttachProcess(process *os.Process) error {
+	if child.pidPromise.IsFinished() {
+		return errors.New("already process attached")
+	}
+	child.process = process
+	pid := process.Pid
+	child.pidPromise.Complete(&pid)
+	return nil
+}
+
+func (child *SipcChild) AttachProcessWithPid(pid int) error {
+	if child.pidPromise.IsFinished() {
+		return errors.New("already process attached")
+	}
+	child.pidPromise.Complete(&pid)
+	return nil
+}
+
+func (child *SipcChild) Start() error {
+	select {
+	case err := <-child.handshakeCh:
+		return err
+	case _ = <-time.After(child.server.handshakeTimeout):
+		return sipc_error.HANDSHAKE_TIMEOUT
+	}
+}
+
+func (child *SipcChild) Read(p []byte) (n int, err error) {
+	if child.state != kStateEstablished {
+		return -1, sipc_error.NOT_CONNECTED
+	}
+
+	return util.BufferedRead(child.readBuffer, p, func() ([]byte, error) {
+		buf, err := util.ReadPacket(child.connection)
+		if err != nil {
+			return nil, err
+		}
+		return child.csClient.Decrypt(nil, nil, buf)
+	})
+}
+
+func (child *SipcChild) Write(p []byte) (n int, err error) {
+	if child.state != kStateEstablished {
+		return -1, sipc_error.NOT_CONNECTED
+	}
+
+	ct, err := child.csServer.Encrypt(nil, nil, p)
+	if err != nil {
+		return 0, err
+	}
+
+	err = util.WritePacket(child.connection, ct)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(p), nil
+}
+
+func (child *SipcChild) Close() error {
+	if child.state != kStateEstablished {
+		return sipc_error.NOT_CONNECTED
+	}
+
+	child.state = kStateClosed
+
+	return nil
+}
+
+func (child *SipcChild) handshakeSuccess(conn net.Conn, cs1 *noise.CipherState, cs2 *noise.CipherState) {
+	child.connection = conn
+	child.csServer = cs2
+	child.csClient = cs1
+	child.readBuffer = bytes.NewBuffer(make([]byte, 1024))
+	child.readBuffer.Reset()
+	child.state = kStateEstablished
+	child.handshakeCh <- nil
+}
+
+func (child *SipcChild) handshakeFailure(err error) {
+	child.handshakeCh <- err
+}
