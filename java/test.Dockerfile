@@ -4,8 +4,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y && \
     apt-get install -y \
-    bash curl wget gnupg2 \
-    openjdk-8-jdk-headless git python3
+    bash curl wget gnupg2 git python3 \
+    openjdk-11-jdk-headless
 
 RUN mkdir -p /work/src
 ADD [ ".", "/work/src" ]
