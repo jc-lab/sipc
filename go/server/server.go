@@ -167,9 +167,14 @@ func (server *SipcServer) childHandshake(conn net.Conn) {
 				break
 			}
 
-			if sipcClient.pid != peerCred.Pid {
-				handleError(errors.New("not matched peer pid"))
-				break
+			pidPointer, ok := sipcClient.pidPromise.Wait(server.handshakeTimeout)
+			if ok {
+				if *pidPointer != peerCred.Pid {
+					handleError(errors.New("not matched peer pid"))
+					break
+				}
+			} else {
+				handleError(errors.New("timeout"))
 			}
 		}
 

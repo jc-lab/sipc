@@ -9,6 +9,7 @@ import (
 	"github.com/jc-lab/sipc/go/sipc_error"
 	"github.com/jc-lab/sipc/go/sipc_proto"
 	"github.com/jc-lab/sipc/go/util"
+	"github.com/jc-lab/sipc/internal/promise"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"net"
@@ -34,8 +35,8 @@ type SipcChild struct {
 	connectInfo        *sipc_proto.ConnectInfo
 	encodedConnectInfo string
 
-	process *os.Process
-	pid     int
+	process    *os.Process
+	pidPromise *promise.Promise[int]
 
 	state       State
 	handshakeCh chan error
@@ -57,6 +58,7 @@ func (server *SipcServer) createChild() (*SipcChild, error) {
 		server:      server,
 		handshakeCh: make(chan error, 1),
 		state:       kStateConnecting,
+		pidPromise:  promise.NewPromise[int](),
 	}
 	encoded, err := proto.Marshal(child.connectInfo)
 	if err != nil {
@@ -100,19 +102,20 @@ func (child *SipcChild) GetEncodedConnectInfo() string {
 }
 
 func (child *SipcChild) AttachProcess(process *os.Process) error {
-	if child.pid != 0 {
+	if child.pidPromise.IsFinished() {
 		return errors.New("already process attached")
 	}
 	child.process = process
-	child.pid = process.Pid
+	pid := process.Pid
+	child.pidPromise.Complete(&pid)
 	return nil
 }
 
 func (child *SipcChild) AttachProcessWithPid(pid int) error {
-	if child.pid != 0 {
+	if child.pidPromise.IsFinished() {
 		return errors.New("already process attached")
 	}
-	child.pid = pid
+	child.pidPromise.Complete(&pid)
 	return nil
 }
 
