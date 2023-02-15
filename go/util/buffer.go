@@ -21,7 +21,7 @@ func BufferedRead(buffer *bytes.Buffer, output []byte, reader ReadFunc) (int, er
 	if err != nil {
 		return 0, err
 	}
-	avail := len(output)
+	avail := cap(output)
 	if len(temp) < avail {
 		avail = len(temp)
 	}
