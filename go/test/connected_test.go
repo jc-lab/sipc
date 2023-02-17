@@ -8,7 +8,7 @@ import (
 	"github.com/jc-lab/sipc/go/util"
 	"log"
 	"os"
-	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -24,17 +24,23 @@ func Test1(t *testing.T) {
 		log.Fatal(err)
 	}
 
+	wg := &sync.WaitGroup{}
+
 	// test for lazy pid set
+	wg.Add(1)
 	go func() {
 		time.Sleep(time.Second)
 		sipcChild.AttachProcessWithPid(os.Getpid())
+		wg.Done()
 	}()
 
-	go ClientApp(t, sipcChild.GetEncodedConnectInfo())
-	ServerApp(t, sipcChild)
+	go ClientApp(t, wg, sipcChild.GetEncodedConnectInfo())
+	ServerApp(t, wg, sipcChild)
+
+	wg.Wait()
 }
 
-func ServerApp(t *testing.T, sipcChild *server.SipcChild) {
+func ServerApp(t *testing.T, wg *sync.WaitGroup, sipcChild *server.SipcChild) {
 	err := sipcChild.Start()
 	if err != nil {
 		t.Fatal("SERVER: handshake error", err)
@@ -43,6 +49,7 @@ func ServerApp(t *testing.T, sipcChild *server.SipcChild) {
 
 	t.Log("SERVER: handshake ok")
 
+	wg.Add(1)
 	go func() {
 		buf := make([]byte, 1024)
 		for {
@@ -57,11 +64,12 @@ func ServerApp(t *testing.T, sipcChild *server.SipcChild) {
 			}
 			log.Println(fmt.Sprintf("SERVER: received: %d: %s", n, string(buf[0:n])))
 		}
+		wg.Done()
 	}()
 
 	for i := 0; i < 5; i++ {
 		_, err := sipcChild.Write([]byte(fmt.Sprintf("HELLO WORLD I AM SERVER [%d]", i)))
-		if err == sipc_error.NOT_CONNECTED || (err != nil && strings.Contains(err.Error(), "broken pipe")) {
+		if err == sipc_error.NOT_CONNECTED || util.ErrIsClose(err) {
 			t.Log("sipcChild.Write ", err)
 			break
 		}
@@ -73,7 +81,7 @@ func ServerApp(t *testing.T, sipcChild *server.SipcChild) {
 	}
 }
 
-func ClientApp(t *testing.T, connectInfo string) {
+func ClientApp(t *testing.T, wg *sync.WaitGroup, connectInfo string) {
 	sipcClient, err := client.NewSipcClient(connectInfo)
 	if err != nil {
 		log.Fatal(err)
@@ -88,6 +96,7 @@ func ClientApp(t *testing.T, connectInfo string) {
 
 	closed := false
 
+	wg.Add(1)
 	go func() {
 		buf := make([]byte, 1024)
 		for !closed {
@@ -102,6 +111,8 @@ func ClientApp(t *testing.T, connectInfo string) {
 			}
 			log.Println(fmt.Sprintf("CLIENT: received: %d: %s", n, string(buf[0:n])))
 		}
+
+		wg.Done()
 	}()
 
 	for i := 0; i < 5; i++ {

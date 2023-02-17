@@ -15,5 +15,6 @@ func ErrIsClose(err error) bool {
 		err == io.ErrClosedPipe ||
 		err == net.ErrClosed ||
 		strings.Contains(err.Error(), "closed") ||
-		strings.Contains(err.Error(), "connection reset")
+		strings.Contains(err.Error(), "connection reset") ||
+		strings.Contains(err.Error(), "The pipe has been ended") // windows named pipe
 }
