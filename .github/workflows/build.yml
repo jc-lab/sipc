@@ -2,7 +2,11 @@ name: Build
 on: [push]
 jobs:
   java-build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Set Environment Variables
         run: |
@@ -38,6 +42,7 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
   go-build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
