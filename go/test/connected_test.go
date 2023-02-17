@@ -8,7 +8,6 @@ import (
 	"github.com/jc-lab/sipc/go/util"
 	"log"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
@@ -61,7 +60,7 @@ func ServerApp(t *testing.T, sipcChild *server.SipcChild) {
 
 	for i := 0; i < 5; i++ {
 		_, err := sipcChild.Write([]byte(fmt.Sprintf("HELLO WORLD I AM SERVER [%d]", i)))
-		if err == sipc_error.NOT_CONNECTED || (err != nil && strings.Contains(err.Error(), "broken pipe")) {
+		if err == sipc_error.NOT_CONNECTED || util.ErrIsClose(err) {
 			t.Log("sipcChild.Write ", err)
 			break
 		}
