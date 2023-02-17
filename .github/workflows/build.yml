@@ -24,7 +24,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'win') }}
         run: |
           cd java
-          gradlew.bat build test
+          .\gradlew.bat build test
       - name: Test on Linux
         if: ${{ !startsWith(matrix.os, 'win') }}
         run: |
