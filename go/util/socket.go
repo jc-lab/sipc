@@ -7,5 +7,13 @@ import (
 )
 
 func ErrIsClose(err error) bool {
-	return err == io.EOF || err == io.ErrUnexpectedEOF || err == io.ErrClosedPipe || err == net.ErrClosed || strings.Contains(err.Error(), "closed")
+	if err == nil {
+		return false
+	}
+	return err == io.EOF ||
+		err == io.ErrUnexpectedEOF ||
+		err == io.ErrClosedPipe ||
+		err == net.ErrClosed ||
+		strings.Contains(err.Error(), "closed") ||
+		strings.Contains(err.Error(), "connection reset")
 }
