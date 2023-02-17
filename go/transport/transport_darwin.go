@@ -1,5 +1,5 @@
-//go:build !windows
-// +build !windows
+//go:build darwin
+// +build darwin
 
 package transport
 
@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jc-lab/sipc/go/sipc_error"
 	"github.com/jc-lab/sipc/go/sipc_proto"
+	"golang.org/x/sys/unix"
 	"net"
-	"syscall"
 )
 
 type DomainSocketTransport struct {
@@ -54,13 +54,13 @@ func (t *DomainSocketTransport) GetPeerCredentials(conn net.Conn) (*PeerCredenti
 		return nil, err
 	}
 
-	cred, err := syscall.GetsockoptUcred(int(f.Fd()), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
+	pid, err := unix.GetsockoptInt(int(f.Fd()), unix.SOL_LOCAL, unix.LOCAL_PEERPID)
 	if err != nil {
 		return nil, err
 	}
 
 	output := &PeerCredentials{
-		Pid: int(cred.Pid),
+		Pid: pid,
 	}
 
 	return output, nil
