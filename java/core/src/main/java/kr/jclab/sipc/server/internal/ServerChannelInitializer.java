@@ -4,8 +4,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import kr.jclab.sipc.internal.PacketCoder;
+import kr.jclab.sipc.internal.InactiveHandler;
 import kr.jclab.sipc.internal.noise.*;
 import kr.jclab.sipc.proto.SipcProto;
+import kr.jclab.sipc.server.SipcChild;
 import lombok.extern.slf4j.Slf4j;
 
 import java.security.NoSuchAlgorithmException;
@@ -23,6 +25,12 @@ public abstract class ServerChannelInitializer<C extends Channel> extends Channe
         ch.attr(ServerConstants.ATTR_PEER_PID).set(pid);
 
         final SipcChildChannelContext sipcChildChannelContext = new SipcChildChannelContext(serverContext, ch, pid);
+        ch.pipeline().addLast(new InactiveHandler((ctx) -> {
+            SipcChild sipcChild = sipcChildChannelContext.getSipcChild();
+            if (sipcChild != null) {
+                sipcChild.internalDetachChannel(sipcChildChannelContext);
+            }
+        }));
 
         NoiseNXHandshake handshake = new NoiseNXHandshake(NoiseRole.RESPONDER, new NoiseHandler() {
             @Override

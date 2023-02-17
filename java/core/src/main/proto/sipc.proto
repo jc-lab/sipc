@@ -16,6 +16,7 @@ message ConnectInfo {
   TransportType transport_type = 2;
   string transport_address = 3;
   bytes public_key = 4;
+  bool  allow_reconnect = 11;
 }
 
 message ClientHelloPayload {

@@ -34,7 +34,7 @@ public class NamedPipeSipcClient extends SipcClient {
         return new Bootstrap()
                 .group(eventLoopHolder.getWorker())
                 .channel(NamedPipeChannel.class)
-                .handler(new ClientChannelInitializer(clientContext))
+                .handler(clientChannelInitializer)
                 .connect(new NamedPipeSocketAddress(clientContext.getConnectInfo().getTransportAddress()))
                 .channel();
     }
