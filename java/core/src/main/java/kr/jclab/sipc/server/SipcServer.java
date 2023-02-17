@@ -1,5 +1,6 @@
 package kr.jclab.sipc.server;
 
+import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -11,6 +12,7 @@ import kr.jclab.noise.protocol.DHState;
 import kr.jclab.sipc.OsDetector;
 import kr.jclab.sipc.internal.EventLoopHolder;
 import kr.jclab.sipc.platform.WindowsNativeSupport;
+import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.internal.*;
 
 import java.io.File;
@@ -47,6 +49,7 @@ public abstract class SipcServer {
             DHState localPrivateKey,
             SocketAddress localAddress,
             int handshakeTimeoutMilliseconds,
+            boolean allowReconnect,
             WindowsNativeSupport windowsNativeSupport
     ) throws NoSuchAlgorithmException {
         EventLoopHolder eventLoopHolder = new EventLoopHolder();
@@ -68,6 +71,7 @@ public abstract class SipcServer {
                     localPrivateKey,
                     localAddress,
                     handshakeTimeoutMilliseconds,
+                    allowReconnect,
                     windowsNativeSupport
             );
         } else {
@@ -80,7 +84,8 @@ public abstract class SipcServer {
                     eventLoopHolder,
                     localPrivateKey,
                     localAddress,
-                    handshakeTimeoutMilliseconds
+                    handshakeTimeoutMilliseconds,
+                    allowReconnect
             );
         }
     }
@@ -102,4 +107,20 @@ public abstract class SipcServer {
     }
 
     protected abstract SipcChild createChild(ChannelHandler channelHandler);
+
+    protected SipcChild createChild(ChannelHandler channelHandler, String transportAddress) {
+        String connectionId = UUID.randomUUID().toString();
+        byte[] publicKey = this.serverContext.getLocalPublicKey();
+
+        SipcProto.ConnectInfo connectInfo = SipcProto.ConnectInfo.newBuilder()
+                .setConnectionId(connectionId)
+                .setTransportType(this.serverContext.getTransportType())
+                .setTransportAddress(transportAddress)
+                .setPublicKey(ByteString.copyFrom(publicKey))
+                .setAllowReconnect(this.serverContext.isAllowReconnect())
+                .build();
+        SipcChild child = new SipcChild(this, connectInfo, channelHandler);
+        serverContext.addChild(connectionId, child);
+        return child;
+    }
 }

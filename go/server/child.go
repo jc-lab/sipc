@@ -9,13 +9,11 @@ import (
 	"github.com/jc-lab/sipc/go/sipc_error"
 	"github.com/jc-lab/sipc/go/sipc_proto"
 	"github.com/jc-lab/sipc/go/util"
-	"github.com/jc-lab/sipc/internal/promise"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"net"
 	"os"
 	"os/exec"
-	"time"
 )
 
 type State int
@@ -36,10 +34,10 @@ type SipcChild struct {
 	encodedConnectInfo string
 
 	process    *os.Process
-	pidPromise *promise.Promise[int]
+	pidPromise *util.Promise[int]
 
-	state       State
-	handshakeCh chan error
+	state            State
+	handshakePromise *util.Promise[error]
 
 	connection net.Conn
 	csServer   *noise.CipherState
@@ -54,11 +52,13 @@ func (server *SipcServer) createChild() (*SipcChild, error) {
 			TransportAddress: server.listener.Addr().String(),
 			ConnectionId:     uuid.NewString(),
 			PublicKey:        server.localStaticKey.Public,
+			AllowReconnect:   server.allowReconnect,
 		},
-		server:      server,
-		handshakeCh: make(chan error, 1),
-		state:       kStateConnecting,
-		pidPromise:  promise.NewPromise[int](),
+		server:           server,
+		handshakePromise: util.NewPromise[error](),
+		state:            kStateConnecting,
+		pidPromise:       util.NewPromise[int](),
+		readBuffer:       bytes.NewBuffer(make([]byte, 1024)),
 	}
 	encoded, err := proto.Marshal(child.connectInfo)
 	if err != nil {
@@ -107,7 +107,7 @@ func (child *SipcChild) AttachProcess(process *os.Process) error {
 	}
 	child.process = process
 	pid := process.Pid
-	child.pidPromise.Complete(&pid)
+	child.pidPromise.Complete(pid)
 	return nil
 }
 
@@ -115,31 +115,39 @@ func (child *SipcChild) AttachProcessWithPid(pid int) error {
 	if child.pidPromise.IsFinished() {
 		return errors.New("already process attached")
 	}
-	child.pidPromise.Complete(&pid)
+	child.pidPromise.Complete(pid)
 	return nil
 }
 
 func (child *SipcChild) Start() error {
-	select {
-	case err := <-child.handshakeCh:
-		return err
-	case _ = <-time.After(child.server.handshakeTimeout):
+	v, ok := child.handshakePromise.Wait(child.server.handshakeTimeout)
+	if ok {
+		return *v
+	} else {
 		return sipc_error.HANDSHAKE_TIMEOUT
 	}
 }
 
-func (child *SipcChild) Read(p []byte) (n int, err error) {
+func (child *SipcChild) IsClosed() bool {
+	return child.state == kStateClosed
+}
+
+func (child *SipcChild) Read(p []byte) (int, error) {
 	if child.state != kStateEstablished {
 		return -1, sipc_error.NOT_CONNECTED
 	}
 
-	return util.BufferedRead(child.readBuffer, p, func() ([]byte, error) {
+	n, err := util.BufferedRead(child.readBuffer, p, func() ([]byte, error) {
 		buf, err := util.ReadPacket(child.connection)
 		if err != nil {
 			return nil, err
 		}
 		return child.csClient.Decrypt(nil, nil, buf)
 	})
+	if err != nil {
+		child.onInactive(err)
+	}
+	return n, err
 }
 
 func (child *SipcChild) Write(p []byte) (n int, err error) {
@@ -160,26 +168,47 @@ func (child *SipcChild) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (child *SipcChild) closeObject() {
+	child.state = kStateClosed
+	child.server.removeChild(child.connectInfo.ConnectionId)
+}
+
 func (child *SipcChild) Close() error {
 	if child.state != kStateEstablished {
 		return sipc_error.NOT_CONNECTED
 	}
 
-	child.state = kStateClosed
+	child.closeObject()
 
-	return nil
+	return child.connection.Close()
 }
 
-func (child *SipcChild) handshakeSuccess(conn net.Conn, cs1 *noise.CipherState, cs2 *noise.CipherState) {
+func (child *SipcChild) handshakeSuccess(conn net.Conn, cs1 *noise.CipherState, cs2 *noise.CipherState) bool {
+	if child.connection != nil && !child.server.allowReconnect {
+		return false
+	}
+
 	child.connection = conn
 	child.csServer = cs2
 	child.csClient = cs1
-	child.readBuffer = bytes.NewBuffer(make([]byte, 1024))
 	child.readBuffer.Reset()
 	child.state = kStateEstablished
-	child.handshakeCh <- nil
+	child.handshakePromise.Complete(nil)
+
+	return true
 }
 
 func (child *SipcChild) handshakeFailure(err error) {
-	child.handshakeCh <- err
+	child.handshakePromise.Complete(err)
+}
+
+func (child *SipcChild) onInactive(cause error) {
+	child.connection = nil
+	child.csServer = nil
+	child.csClient = nil
+	if child.server.allowReconnect {
+		child.state = kStateConnecting
+	} else {
+		child.closeObject()
+	}
 }

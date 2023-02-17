@@ -39,7 +39,7 @@ public class UnixDomainSocketSipcClient extends SipcClient {
 
         return bootstrap
                 .group(eventLoopHolder.getWorker())
-                .handler(new ClientChannelInitializer(clientContext))
+                .handler(clientChannelInitializer)
                 .connect(new DomainSocketAddress(clientContext.getConnectInfo().getTransportAddress()))
                 .channel();
     }

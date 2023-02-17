@@ -5,6 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import kr.jclab.sipc.OsDetector;
+import kr.jclab.sipc.client.internal.ClientChannelInitializer;
 import kr.jclab.sipc.client.internal.NamedPipeSipcClient;
 import kr.jclab.sipc.client.internal.SipcClientContext;
 import kr.jclab.sipc.client.internal.UnixDomainSocketSipcClient;
@@ -20,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public abstract class SipcClient {
     protected final EventLoopHolder eventLoopHolder;
     protected final SipcClientContext clientContext;
+    protected final ClientChannelInitializer clientChannelInitializer;
 
     public SipcClient(
             EventLoopHolder eventLoopHolder,
@@ -28,9 +30,13 @@ public abstract class SipcClient {
     ) {
         this.eventLoopHolder = eventLoopHolder;
         this.clientContext = new SipcClientContext(connectInfo, handler);
+        this.clientChannelInitializer = new ClientChannelInitializer(clientContext, (ctx) -> {
+            if (connectInfo.getAllowReconnect()) {
+                this.clientContext.setChannel(createChannel());
+            }
+        });
 
-        Channel channel = createChannel();
-        this.clientContext.setChannel(channel);
+        this.clientContext.setChannel(createChannel());
     }
 
     @lombok.Builder

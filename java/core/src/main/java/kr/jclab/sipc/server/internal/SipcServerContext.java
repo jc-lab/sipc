@@ -9,23 +9,31 @@ import kr.jclab.sipc.platform.WindowsNativeSupport;
 import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.SipcChild;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-@Getter
 public class SipcServerContext {
+    @Getter
     private final EventLoopHolder eventLoopHolder;
+    @Getter
     private final SipcProto.TransportType transportType;
 
+    @Getter
     private final DHState localPrivateKey;
+    @Getter
     private final WindowsNativeSupport windowsNativeSupport;
 
     private final ConcurrentHashMap<String, SipcChild> childMapByConnectionId = new ConcurrentHashMap<>();
 
     @Getter
     private int handshakeTimeout = 30000;
+    @Getter
+    @Setter
+    private boolean allowReconnect = false;
+
     private ScheduledFuture<?> handshakeTimer = null;
 
     public SipcServerContext(
@@ -72,7 +80,11 @@ public class SipcServerContext {
         return sipcChild;
     }
 
-    private void onHandshakeTimeout() {
+    public void addChild(String connectionId, SipcChild child) {
+        childMapByConnectionId.put(connectionId, child);
+    }
 
+    public boolean removeChild(String connectionId) {
+        return childMapByConnectionId.remove(connectionId) != null;
     }
 }

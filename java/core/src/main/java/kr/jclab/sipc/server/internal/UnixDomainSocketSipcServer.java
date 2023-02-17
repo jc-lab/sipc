@@ -29,7 +29,8 @@ public class UnixDomainSocketSipcServer extends SipcServer {
             EventLoopHolder eventLoopHolder,
             DHState localPrivateKey,
             SocketAddress localAddress,
-            int handshakeTimeoutMilliseconds
+            int handshakeTimeoutMilliseconds,
+            boolean allowReconnect
     ) throws NoSuchAlgorithmException {
         super(
                 new SipcServerContext(
@@ -45,6 +46,7 @@ public class UnixDomainSocketSipcServer extends SipcServer {
         if (handshakeTimeoutMilliseconds != 0) {
             serverContext.setHandshakeTimeout(handshakeTimeoutMilliseconds);
         }
+        serverContext.setAllowReconnect(allowReconnect);
 
         this.transportAddress = ((DomainSocketAddress) localAddress).path();
 
@@ -77,17 +79,6 @@ public class UnixDomainSocketSipcServer extends SipcServer {
 
     @Override
     protected SipcChild createChild(ChannelHandler channelHandler) {
-        String connectionId = UUID.randomUUID().toString();
-        byte[] publicKey = this.serverContext.getLocalPublicKey();
-
-        SipcProto.ConnectInfo connectInfo = SipcProto.ConnectInfo.newBuilder()
-                .setConnectionId(connectionId)
-                .setTransportType(this.serverContext.getTransportType())
-                .setTransportAddress(transportAddress)
-                .setPublicKey(ByteString.copyFrom(publicKey))
-                .build();
-        SipcChild child = new SipcChild(this, connectInfo, channelHandler);
-        serverContext.getChildMapByConnectionId().put(connectionId, child);
-        return child;
+        return this.createChild(channelHandler, transportAddress);
     }
 }

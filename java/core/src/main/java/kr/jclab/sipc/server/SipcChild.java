@@ -18,6 +18,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkState;
+
 @RequiredArgsConstructor
 public class SipcChild {
     private final SipcServer parent;
@@ -69,28 +71,56 @@ public class SipcChild {
 
     private synchronized void start() {
         if (!handshakeFuture.isDone()) {
-            int handshakeTimeout = parent.serverContext.getHandshakeTimeout();
-            if (handshakeTimeout > 0) {
-                handshakeTimeoutFuture = parent.serverContext.getEventLoopHolder()
-                        .getScheduledExecutorService()
-                        .schedule(() -> {
-                            if (!handshakeFuture.isDone()) {
-                                onHandshakeTimeout();
-                            }
-                        }, handshakeTimeout, TimeUnit.MILLISECONDS);
-            }
+            startHandshakeTimeout();
         }
     }
 
     private synchronized void onHandshakeTimeout() {
-        handshakeFuture.completeExceptionally(new SipcHandshakeTimeoutException());
+        if (this.childChannelContext != null) {
+            return;
+        }
+
+        parent.serverContext.removeChild(connectInfo.getConnectionId());
+
+        if (!handshakeFuture.isDone()) {
+            handshakeFuture.completeExceptionally(new SipcHandshakeTimeoutException());
+        }
+
+        if (this.channelHandler instanceof SipcServerChannelHandler) {
+            ((SipcServerChannelHandler) this.channelHandler).onHandshakeTimeout(this);
+        }
     }
 
     public synchronized void internalAttachChannel(SipcChildChannelContext childChannelContext) {
+        if (!parent.serverContext.isAllowReconnect()) {
+            checkState(this.childChannelContext == null);
+        }
         this.childChannelContext = childChannelContext;
         if (handshakeTimeoutFuture != null) {
             handshakeTimeoutFuture.cancel(false);
         }
-        handshakeFuture.complete(null);
+        if (!handshakeFuture.isDone()) {
+            handshakeFuture.complete(null);
+        }
+    }
+
+    public synchronized void internalDetachChannel(SipcChildChannelContext childChannelContext) {
+        if (this.childChannelContext == childChannelContext) {
+            if (parent.serverContext.isAllowReconnect()) {
+                this.childChannelContext = null;
+                startHandshakeTimeout();
+            } else {
+                parent.serverContext.removeChild(connectInfo.getConnectionId());
+            }
+        }
+    }
+
+    private void startHandshakeTimeout() {
+        int handshakeTimeout = parent.serverContext.getHandshakeTimeout();
+        if (handshakeTimeout > 0) {
+            handshakeTimeoutFuture = parent.serverContext.getEventLoopHolder()
+                    .getScheduledExecutorService()
+                    .schedule(this::onHandshakeTimeout, handshakeTimeout, TimeUnit.MILLISECONDS);
+        }
     }
 }

@@ -31,6 +31,7 @@ public class WindowsNamedPipeSipcServer extends SipcServer {
             DHState localPrivateKey,
             SocketAddress localAddress,
             int handshakeTimeoutMilliseconds,
+            boolean allowReconnect,
             WindowsNativeSupport windowsNativeSupport
     ) throws NoSuchAlgorithmException {
         super(
@@ -51,6 +52,7 @@ public class WindowsNamedPipeSipcServer extends SipcServer {
         if (handshakeTimeoutMilliseconds != 0) {
             serverContext.setHandshakeTimeout(handshakeTimeoutMilliseconds);
         }
+        serverContext.setAllowReconnect(allowReconnect);
 
         this.serverChannel = (NamedPipeServerChannel) new ServerBootstrap()
                 .group(eventLoopHolder.getBoss(), eventLoopHolder.getWorker())
@@ -62,17 +64,6 @@ public class WindowsNamedPipeSipcServer extends SipcServer {
 
     @Override
     protected SipcChild createChild(ChannelHandler channelHandler) {
-        String connectionId = UUID.randomUUID().toString();
-        byte[] publicKey = this.serverContext.getLocalPublicKey();
-
-        SipcProto.ConnectInfo connectInfo = SipcProto.ConnectInfo.newBuilder()
-                .setConnectionId(connectionId)
-                .setTransportType(this.serverContext.getTransportType())
-                .setTransportAddress(transportAddress)
-                .setPublicKey(ByteString.copyFrom(publicKey))
-                .build();
-        SipcChild child = new SipcChild(this, connectInfo, channelHandler);
-        serverContext.getChildMapByConnectionId().put(connectionId, child);
-        return child;
+        return this.createChild(channelHandler, transportAddress);
     }
 }

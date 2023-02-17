@@ -15,6 +15,7 @@ import (
 
 type SipcServer struct {
 	handshakeTimeout time.Duration
+	allowReconnect   bool
 	transport        transport.Transport
 	listener         net.Listener
 	localStaticKey   noise.DHKey
@@ -26,11 +27,13 @@ type SipcServerConfig struct {
 	LocalPrivateKey  []byte
 	HandshakeTimeout time.Duration
 	Transport        transport.Transport
+	AllowReconnect   bool
 }
 
 func NewSipcServer(config SipcServerConfig) (*SipcServer, error) {
 	server := &SipcServer{
 		handshakeTimeout: config.HandshakeTimeout,
+		allowReconnect:   config.AllowReconnect,
 		transport:        config.Transport,
 
 		childMap: make(map[string]*SipcChild),
@@ -74,7 +77,7 @@ func (server *SipcServer) listenWorker() {
 	for {
 		conn, err := server.listener.Accept()
 		if err != nil {
-			println(err)
+			log.Println(err)
 			break
 		}
 		server.childHandshake(conn)
@@ -128,8 +131,11 @@ func (server *SipcServer) childHandshake(conn net.Conn) {
 		}
 		if cs1 != nil || cs2 != nil {
 			if sipcClient != nil {
-				handshaked = true
-				sipcClient.handshakeSuccess(conn, cs1, cs2)
+				if sipcClient.handshakeSuccess(conn, cs1, cs2) {
+					handshaked = true
+				} else {
+					_ = conn.Close()
+				}
 			}
 			return payload, true
 		}
@@ -189,4 +195,8 @@ func (server *SipcServer) childHandshake(conn net.Conn) {
 			break
 		}
 	}
+}
+
+func (server *SipcServer) removeChild(connectionId string) {
+	delete(server.childMap, connectionId)
 }
