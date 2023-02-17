@@ -47,6 +47,7 @@ func NewSipcClient(connectInfo string) (*SipcClient, error) {
 	client := &SipcClient{
 		HandshakeTimeout: time.Second * 60,
 		state:            kStateIdle,
+		readBuffer:       bytes.NewBuffer(make([]byte, 1024)),
 	}
 	connectInfoBinary, err := base64.URLEncoding.DecodeString(connectInfo)
 	if err != nil {
@@ -60,14 +61,25 @@ func NewSipcClient(connectInfo string) (*SipcClient, error) {
 	return client, nil
 }
 
+func (client *SipcClient) IsConnected() bool {
+	return client.state == kStateEstablished
+}
+
+func (client *SipcClient) IsClosed() bool {
+	return client.state == kStateClosed
+}
+
 func (client *SipcClient) Start() error {
-	t, err := transport.NewTransport(client.connectInfo.TransportType)
-	if err != nil {
-		return err
+	if client.transport == nil {
+		t, err := transport.NewTransport(client.connectInfo.TransportType)
+		if err != nil {
+			return err
+		}
+		client.transport = t
 	}
-	client.transport = t
+
 	client.handshakeCh = make(chan error, 1)
-	conn, err := t.Connect(client.connectInfo.TransportAddress)
+	conn, err := client.transport.Connect(client.connectInfo.TransportAddress)
 	if err != nil {
 		return err
 	}
@@ -103,7 +115,6 @@ func (client *SipcClient) Start() error {
 			client.csServer = cs2
 			client.csClient = cs1
 			client.state = kStateEstablished
-			client.readBuffer = bytes.NewBuffer(make([]byte, 1024))
 			client.readBuffer.Reset()
 			client.handshakeCh <- nil
 			return payload, 1
@@ -161,18 +172,22 @@ func (client *SipcClient) Start() error {
 	}
 }
 
-func (client *SipcClient) Read(p []byte) (n int, err error) {
+func (client *SipcClient) Read(p []byte) (int, error) {
 	if client.state != kStateEstablished {
 		return -1, sipc_error.NOT_CONNECTED
 	}
 
-	return util.BufferedRead(client.readBuffer, p, func() ([]byte, error) {
+	n, err := util.BufferedRead(client.readBuffer, p, func() ([]byte, error) {
 		buf, err := util.ReadPacket(client.connection)
 		if err != nil {
 			return nil, err
 		}
 		return client.csServer.Decrypt(nil, nil, buf)
 	})
+	if err != nil {
+		client.onInactive(err)
+	}
+	return n, err
 }
 
 func (client *SipcClient) Write(p []byte) (n int, err error) {
@@ -193,12 +208,28 @@ func (client *SipcClient) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (client *SipcClient) closeObject() {
+	client.state = kStateClosed
+}
+
 func (client *SipcClient) Close() error {
 	if client.state != kStateEstablished {
 		return sipc_error.NOT_CONNECTED
 	}
 
-	client.state = kStateClosed
+	client.closeObject()
 
-	return nil
+	return client.connection.Close()
+}
+
+func (client *SipcClient) onInactive(cause error) {
+	client.connection = nil
+	client.csServer = nil
+	client.csClient = nil
+	if client.connectInfo.AllowReconnect {
+		client.state = kStateIdle
+		_ = client.Start()
+	} else {
+		client.closeObject()
+	}
 }

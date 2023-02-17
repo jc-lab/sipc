@@ -1,4 +1,4 @@
-package promise
+package util
 
 import (
 	"sync"
@@ -20,7 +20,7 @@ func TestNew(t *testing.T) {
 func TestSignalAndWait(t *testing.T) {
 	p := NewPromise[DummyStruct]()
 
-	p.Complete(&DummyStruct{value: 123})
+	p.Complete(DummyStruct{value: 123})
 
 	r, ok := p.Wait(time.Second)
 	if !ok {
@@ -37,7 +37,7 @@ func TestWaitAndSignal(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond * 100)
-		p.Complete(&DummyStruct{value: 123})
+		p.Complete(DummyStruct{value: 123})
 	}()
 
 	r, ok := p.Wait(time.Second)
@@ -53,7 +53,7 @@ func TestWaitAndSignal(t *testing.T) {
 func TestSignalAndChan(t *testing.T) {
 	p := NewPromise[DummyStruct]()
 
-	p.Complete(&DummyStruct{value: 123})
+	p.Complete(DummyStruct{value: 123})
 	v := <-p.Chan()
 
 	if v.value != 123 {
@@ -66,7 +66,7 @@ func TestChanAndSignal(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond * 100)
-		p.Complete(&DummyStruct{value: 123})
+		p.Complete(DummyStruct{value: 123})
 	}()
 
 	v := <-p.Chan()
@@ -91,7 +91,7 @@ func TestChanMixed(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond * 100)
-		p.Complete(&DummyStruct{value: 123})
+		p.Complete(DummyStruct{value: 123})
 	}()
 
 	v := <-p.Chan()
