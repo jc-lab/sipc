@@ -21,12 +21,12 @@ jobs:
           cache: 'gradle'
 
       - name: Test on Windows
-        if: startsWith(matrix.os, 'win')
+        if: ${{ startsWith(matrix.os, 'win') }}
         run: |
           cd java
           gradlew.bat build test
       - name: Test on Linux
-        if: !startsWith(matrix.os, 'win')
+        if: ${{ !startsWith(matrix.os, 'win') }}
         run: |
           cd java
           chmod +x gradlew
