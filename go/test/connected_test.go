@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/jc-lab/sipc/go/client"
 	"github.com/jc-lab/sipc/go/server"
-	"io"
+	"github.com/jc-lab/sipc/go/sipc_error"
+	"github.com/jc-lab/sipc/go/util"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,7 +48,8 @@ func ServerApp(t *testing.T, sipcChild *server.SipcChild) {
 		for {
 			n, err := sipcChild.Read(buf)
 			if err != nil {
-				if err == io.EOF {
+				if util.ErrIsClose(err) {
+					t.Log("sipcChild.Read ", err)
 					break
 				}
 				t.Fatal("SERVER: read error: ", err)
@@ -58,6 +61,10 @@ func ServerApp(t *testing.T, sipcChild *server.SipcChild) {
 
 	for i := 0; i < 5; i++ {
 		_, err := sipcChild.Write([]byte(fmt.Sprintf("HELLO WORLD I AM SERVER [%d]", i)))
+		if err == sipc_error.NOT_CONNECTED || (err != nil && strings.Contains(err.Error(), "broken pipe")) {
+			t.Log("sipcChild.Write ", err)
+			break
+		}
 		if err != nil {
 			t.Fatal("SERVER: write error: ", err)
 			break
@@ -86,7 +93,8 @@ func ClientApp(t *testing.T, connectInfo string) {
 		for !closed {
 			n, err := sipcClient.Read(buf)
 			if err != nil {
-				if err == io.EOF {
+				if closed && util.ErrIsClose(err) {
+					t.Log("sipcClient.Read ", err)
 					break
 				}
 				t.Fatal("CLIENT: read error: ", err)
