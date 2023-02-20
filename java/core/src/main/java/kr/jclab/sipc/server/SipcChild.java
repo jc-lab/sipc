@@ -2,6 +2,7 @@ package kr.jclab.sipc.server;
 
 import com.google.common.base.Preconditions;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import kr.jclab.sipc.exception.SipcHandshakeTimeoutException;
 import kr.jclab.sipc.exception.NotYetConnectedException;
@@ -62,11 +63,11 @@ public class SipcChild {
         return this.handshakeFuture;
     }
 
-    public void writeAndFlush(ByteBuf msg) {
+    public ChannelFuture writeAndFlush(ByteBuf msg) {
         if (childChannelContext == null) {
             throw new NotYetConnectedException();
         }
-        childChannelContext.getChannel().pipeline().writeAndFlush(msg);
+        return childChannelContext.getChannel().pipeline().writeAndFlush(msg);
     }
 
     private synchronized void start() {

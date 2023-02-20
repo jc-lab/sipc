@@ -5,7 +5,7 @@ plugins {
 }
 
 val projectGroup = "kr.jclab.sipc"
-val projectVersion = "0.2.0-rc2"
+val projectVersion = "0.2.1-rc2"
 
 group = projectGroup
 version = projectVersion
