@@ -46,6 +46,13 @@ func (p *Promise[T]) Complete(value T) {
 	p.consumers = nil
 }
 
+func (p *Promise[T]) Reset() {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.finished = false
+	p.rejected = nil
+}
+
 func (p *Promise[T]) Wait(timeout time.Duration) (*T, bool) {
 	select {
 	case res := <-p.Chan():
