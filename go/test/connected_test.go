@@ -98,6 +98,9 @@ func TestHandshakeTimeoutInClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	dummyListener, _ := tp.Listen(connectInfo.TransportAddress)
+	go func() {
+		dummyListener.Accept()
+	}()
 	defer dummyListener.Close()
 
 	sipcClient, err := client.NewSipcClient(sipcChild.GetEncodedConnectInfo())
