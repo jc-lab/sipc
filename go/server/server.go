@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type SipcServer struct {
 	listener         net.Listener
 	localStaticKey   noise.DHKey
 	childMap         map[string]*SipcChild
+	mutex            sync.RWMutex
 }
 
 type SipcServerConfig struct {
@@ -36,6 +38,7 @@ func NewSipcServer(config SipcServerConfig) (*SipcServer, error) {
 		allowReconnect:   config.AllowReconnect,
 		transport:        config.Transport,
 
+		mutex:    sync.RWMutex{},
 		childMap: make(map[string]*SipcChild),
 	}
 	if server.handshakeTimeout == 0 {
@@ -67,6 +70,8 @@ func NewSipcServer(config SipcServerConfig) (*SipcServer, error) {
 }
 
 func (server *SipcServer) Shutdown() {
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
 	if server.listener != nil {
 		_ = server.listener.Close()
 		server.listener = nil
@@ -75,7 +80,15 @@ func (server *SipcServer) Shutdown() {
 
 func (server *SipcServer) listenWorker() {
 	for {
-		conn, err := server.listener.Accept()
+		server.mutex.RLock()
+		listener := server.listener
+		server.mutex.RUnlock()
+
+		if listener == nil {
+			break
+		}
+
+		conn, err := listener.Accept()
 		if err != nil {
 			log.Println(err)
 			break
@@ -167,7 +180,7 @@ func (server *SipcServer) childHandshake(conn net.Conn) {
 				break
 			}
 
-			sipcClient = server.childMap[clientHello.ConnectionId]
+			sipcClient = server.getChild(clientHello.ConnectionId)
 			if sipcClient == nil {
 				handleError(errors.New("invalid connection id"))
 				break
@@ -197,6 +210,20 @@ func (server *SipcServer) childHandshake(conn net.Conn) {
 	}
 }
 
+func (server *SipcServer) addChild(connectionId string, child *SipcChild) {
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
+	server.childMap[connectionId] = child
+}
+
+func (server *SipcServer) getChild(connectionId string) *SipcChild {
+	server.mutex.RLock()
+	defer server.mutex.RUnlock()
+	return server.childMap[connectionId]
+}
+
 func (server *SipcServer) removeChild(connectionId string) {
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
 	delete(server.childMap, connectionId)
 }

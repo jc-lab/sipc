@@ -14,6 +14,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"time"
 )
 
 type State int
@@ -24,6 +25,12 @@ const (
 	kStateEstablished
 	kStateClosed
 )
+
+type HandshakeFailureHandler func(child *SipcChild, cause error)
+
+type SipcChildConfig struct {
+	HandshakeFailureHandler HandshakeFailureHandler
+}
 
 type SipcChild struct {
 	io.ReadWriteCloser
@@ -36,6 +43,8 @@ type SipcChild struct {
 	process    *os.Process
 	pidPromise *util.Promise[int]
 
+	handshakeFailureHandler HandshakeFailureHandler
+
 	state            State
 	handshakePromise *util.Promise[error]
 
@@ -45,7 +54,7 @@ type SipcChild struct {
 	readBuffer *bytes.Buffer
 }
 
-func (server *SipcServer) createChild() (*SipcChild, error) {
+func (server *SipcServer) createChild(config *SipcChildConfig) (*SipcChild, error) {
 	child := &SipcChild{
 		connectInfo: &sipc_proto.ConnectInfo{
 			TransportType:    server.transport.TransportType(),
@@ -60,19 +69,24 @@ func (server *SipcServer) createChild() (*SipcChild, error) {
 		pidPromise:       util.NewPromise[int](),
 		readBuffer:       bytes.NewBuffer(make([]byte, 1024)),
 	}
+
+	if config != nil {
+		child.handshakeFailureHandler = config.HandshakeFailureHandler
+	}
+
 	encoded, err := proto.Marshal(child.connectInfo)
 	if err != nil {
 		return nil, err
 	}
 	child.encodedConnectInfo = base64.URLEncoding.EncodeToString(encoded)
 
-	server.childMap[child.connectInfo.ConnectionId] = child
+	server.addChild(child.connectInfo.ConnectionId, child)
 
 	return child, nil
 }
 
-func (server *SipcServer) CreateProcess(cmd *exec.Cmd) (*SipcChild, error) {
-	child, err := server.createChild()
+func (server *SipcServer) CreateProcess(cmd *exec.Cmd, config *SipcChildConfig) (*SipcChild, error) {
+	child, err := server.createChild(config)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +102,8 @@ func (server *SipcServer) CreateProcess(cmd *exec.Cmd) (*SipcChild, error) {
 	return child, err
 }
 
-func (server *SipcServer) PrepareProcess() (*SipcChild, error) {
-	child, err := server.createChild()
+func (server *SipcServer) PrepareProcess(config *SipcChildConfig) (*SipcChild, error) {
+	child, err := server.createChild(config)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +134,7 @@ func (child *SipcChild) AttachProcessWithPid(pid int) error {
 }
 
 func (child *SipcChild) Start() error {
+	child.startHandshake()
 	v, ok := child.handshakePromise.Wait(child.server.handshakeTimeout)
 	if ok {
 		return *v
@@ -183,6 +198,18 @@ func (child *SipcChild) Close() error {
 	return child.connection.Close()
 }
 
+func (child *SipcChild) startHandshake() {
+	go func() {
+		child.handshakePromise.Reset()
+		select {
+		case _ = <-child.handshakePromise.Chan():
+			break
+		case _ = <-time.After(child.server.handshakeTimeout):
+			child.handshakeFailure(sipc_error.HANDSHAKE_TIMEOUT)
+		}
+	}()
+}
+
 func (child *SipcChild) handshakeSuccess(conn net.Conn, cs1 *noise.CipherState, cs2 *noise.CipherState) bool {
 	if child.connection != nil && !child.server.allowReconnect {
 		return false
@@ -199,7 +226,11 @@ func (child *SipcChild) handshakeSuccess(conn net.Conn, cs1 *noise.CipherState, 
 }
 
 func (child *SipcChild) handshakeFailure(err error) {
+	child.closeObject()
 	child.handshakePromise.Complete(err)
+	if child.handshakeFailureHandler != nil {
+		child.handshakeFailureHandler(child, err)
+	}
 }
 
 func (child *SipcChild) onInactive(cause error) {
@@ -208,6 +239,7 @@ func (child *SipcChild) onInactive(cause error) {
 	child.csClient = nil
 	if child.server.allowReconnect {
 		child.state = kStateConnecting
+		child.startHandshake()
 	} else {
 		child.closeObject()
 	}
