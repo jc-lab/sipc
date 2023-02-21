@@ -151,8 +151,8 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
 
     private void handshakeSucceeded(ChannelHandlerContext ctx, NoiseSecureChannelSession session) {
         ctx.pipeline()
-                .addBefore(
-                        HANDLER_NAME,
+                .addAfter(
+                        ctx.name(),
                         NoiseCipherCodec.HANDLER_NAME,
                         new NoiseCipherCodec(session.getAliceCipher(), session.getBobCipher())
                 );
