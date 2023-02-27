@@ -9,6 +9,7 @@ enum TransportType {
   kUnknown = 0;
   kUnixDomainSocket = 1;
   kWindowsNamedPipe = 2;
+  kTcp = 101;
 }
 
 message ConnectInfo {

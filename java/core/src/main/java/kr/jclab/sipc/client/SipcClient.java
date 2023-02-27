@@ -5,10 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import kr.jclab.sipc.OsDetector;
-import kr.jclab.sipc.client.internal.ClientChannelInitializer;
-import kr.jclab.sipc.client.internal.NamedPipeSipcClient;
-import kr.jclab.sipc.client.internal.SipcClientContext;
-import kr.jclab.sipc.client.internal.UnixDomainSocketSipcClient;
+import kr.jclab.sipc.client.internal.*;
 import kr.jclab.sipc.internal.EventLoopHolder;
 import kr.jclab.sipc.proto.SipcProto;
 
@@ -44,7 +41,8 @@ public abstract class SipcClient {
             EventLoopGroup worker,
             ScheduledExecutorService scheduledExecutorService,
             String connectInfoText,
-            ChannelHandler handler
+            ChannelHandler handler,
+            boolean allowRemote
     ) throws InvalidProtocolBufferException {
         if (connectInfoText == null) {
             connectInfoText = System.getenv("SIPC_V1_CONNECT_INFO");
@@ -75,6 +73,11 @@ public abstract class SipcClient {
                     throw new RuntimeException("Invalid transport type this OS. type=" + connectInfo.getTransportType());
                 }
                 return new UnixDomainSocketSipcClient(eventLoopHolder, connectInfo, handler);
+            case kTcp:
+                if (!allowRemote) {
+                    throw new RuntimeException("remote is not allowed");
+                }
+                return new SipcTcpClient(eventLoopHolder, connectInfo, handler);
         }
 
         throw new RuntimeException("Invalid transport type this OS. type=" + connectInfo.getTransportType());

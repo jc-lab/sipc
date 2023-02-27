@@ -44,6 +44,10 @@ type SipcClient struct {
 }
 
 func NewSipcClient(connectInfo string) (*SipcClient, error) {
+	return NewSipcClientWithAllowRemote(connectInfo, false)
+}
+
+func NewSipcClientWithAllowRemote(connectInfo string, allowRemote bool) (*SipcClient, error) {
 	client := &SipcClient{
 		HandshakeTimeout: time.Second * 60,
 		state:            kStateIdle,
@@ -58,6 +62,12 @@ func NewSipcClient(connectInfo string) (*SipcClient, error) {
 		return nil, err
 	}
 
+	if client.connectInfo.TransportType == sipc_proto.TransportType_kTcp {
+		if !allowRemote {
+			return nil, errors.New("remote connection not allowed")
+		}
+	}
+
 	return client, nil
 }
 
@@ -70,10 +80,18 @@ func (client *SipcClient) IsClosed() bool {
 }
 
 func (client *SipcClient) Start() error {
+	var err error
+
 	if client.transport == nil {
-		t, err := transport.NewTransport(client.connectInfo.TransportType)
-		if err != nil {
-			return err
+		var t transport.Transport
+
+		if client.connectInfo.TransportType == sipc_proto.TransportType_kTcp {
+			t = transport.NewTcpTransport()
+		} else {
+			t, err = transport.NewTransport(client.connectInfo.TransportType)
+			if err != nil {
+				return err
+			}
 		}
 		client.transport = t
 	}
