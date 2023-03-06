@@ -1,0 +1,56 @@
+{
+  "name": "node-sipc",
+  "version": "0.2.0",
+  "description": "",
+  "main": "lib/index.js",
+  "type": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc --outDir lib",
+    "lint:test": "eslint ./src/**/*.ts",
+    "lint:fix": "eslint --fix ./src/**/*.ts",
+    "generate:proto": "node gen-proto.js",
+    "test": ""
+  },
+  "files": [
+    "LICENSE",
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jc-lab/sipc.git"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/jc-lab/sipc/issues"
+  },
+  "homepage": "https://github.com/jc-lab/sipc#readme",
+  "devDependencies": {
+    "@types/duplexify": "^3.6.1",
+    "@types/google-protobuf": "^3.15.6",
+    "@types/jest": "^29.2.6",
+    "@types/node": "^18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.3.1",
+    "@typescript-eslint/parser": "^5.3.1",
+    "eslint": "^7.0.0",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.1",
+    "eslint-plugin-standard": "^5.0.0",
+    "google-protobuf": "^3.21.2",
+    "jest": "^29.3.1",
+    "jest-expect-message": "^1.1.3",
+    "ts-jest": "^29.0.5",
+    "ts-protoc-gen": "^0.15.0",
+    "tsc": "^2.0.4",
+    "typescript": "^4.9.4"
+  },
+  "packageManager": "yarn@3.4.1",
+  "peerDependencies": {
+    "google-protobuf": "*"
+  },
+  "dependencies": {
+    "duplexify": "^4.1.2",
+    "node-noise": "^0.0.8"
+  }
+}
