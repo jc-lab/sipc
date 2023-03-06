@@ -54,3 +54,32 @@ jobs:
 
       - name: Tests
         run: go test -v ./...
+  node-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nodeVersion:
+          - 14
+          - 16
+          - 18
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Node.js
+        uses: actions/setup-node@master
+        with:
+          node-version: ${{ matrix.nodeVersion }}
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{runner.OS}}-build-node_${{ matrix.nodeVersion }}-${{hashFiles('node/yarn.lock')}}
+          restore-keys: |
+            ${{runner.OS}}-build-node_${{ matrix.nodeVersion }}-*
+      - run: |
+          cd node
+          yarn install
+      - run: |
+          cd node
+          yarn test
+
