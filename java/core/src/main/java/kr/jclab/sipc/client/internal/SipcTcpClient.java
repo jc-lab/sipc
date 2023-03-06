@@ -11,13 +11,14 @@ import kr.jclab.sipc.proto.SipcProto;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.security.NoSuchAlgorithmException;
 
 public class SipcTcpClient extends SipcClient {
     public SipcTcpClient(
             EventLoopHolder eventLoopHolder,
             SipcProto.ConnectInfo connectInfo,
             ChannelHandler handler
-    ) {
+    ) throws NoSuchAlgorithmException {
         super(eventLoopHolder, connectInfo, handler);
     }
 

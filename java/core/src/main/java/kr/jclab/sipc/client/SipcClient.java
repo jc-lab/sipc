@@ -9,6 +9,7 @@ import kr.jclab.sipc.client.internal.*;
 import kr.jclab.sipc.internal.EventLoopHolder;
 import kr.jclab.sipc.proto.SipcProto;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,7 +25,7 @@ public abstract class SipcClient {
             EventLoopHolder eventLoopHolder,
             SipcProto.ConnectInfo connectInfo,
             ChannelHandler handler
-    ) {
+    ) throws NoSuchAlgorithmException {
         this.eventLoopHolder = eventLoopHolder;
         this.clientContext = new SipcClientContext(connectInfo, handler);
         this.clientChannelInitializer = new ClientChannelInitializer(clientContext, (ctx) -> {
@@ -43,7 +44,7 @@ public abstract class SipcClient {
             String connectInfoText,
             ChannelHandler handler,
             boolean allowRemote
-    ) throws InvalidProtocolBufferException {
+    ) throws InvalidProtocolBufferException, NoSuchAlgorithmException {
         if (connectInfoText == null) {
             connectInfoText = System.getenv("SIPC_V1_CONNECT_INFO");
         }

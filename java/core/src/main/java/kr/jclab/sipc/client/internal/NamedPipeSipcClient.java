@@ -16,12 +16,14 @@ import kr.jclab.sipc.client.SipcClient;
 import kr.jclab.sipc.internal.EventLoopHolder;
 import kr.jclab.sipc.proto.SipcProto;
 
+import java.security.NoSuchAlgorithmException;
+
 public class NamedPipeSipcClient extends SipcClient {
     public NamedPipeSipcClient(
             EventLoopHolder eventLoopHolder,
             SipcProto.ConnectInfo connectInfo,
             ChannelHandler handler
-    ) {
+    ) throws NoSuchAlgorithmException {
         super(eventLoopHolder, connectInfo, handler);
     }
 

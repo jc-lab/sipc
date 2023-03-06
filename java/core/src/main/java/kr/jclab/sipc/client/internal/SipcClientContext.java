@@ -3,10 +3,13 @@ package kr.jclab.sipc.client.internal;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPromise;
+import kr.jclab.noise.protocol.DHState;
+import kr.jclab.noise.protocol.Noise;
 import kr.jclab.sipc.proto.SipcProto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
@@ -16,15 +19,21 @@ public class SipcClientContext {
     @Getter
     private final ChannelHandler channelHandler;
 
+    @Getter
+    private final DHState localPrivateKey;
+
     @Setter
     public ChannelPromise handshakeFuture;
 
     @Getter
     private Channel channel;
 
-    public SipcClientContext(SipcProto.ConnectInfo connectInfo, ChannelHandler channelHandler) {
+    public SipcClientContext(SipcProto.ConnectInfo connectInfo, ChannelHandler channelHandler) throws NoSuchAlgorithmException {
         this.connectInfo = connectInfo;
         this.channelHandler = channelHandler;
+
+        this.localPrivateKey = Noise.createDH("25519");
+        this.localPrivateKey.generateKeyPair();
     }
 
     public void setChannel(Channel channel) {
@@ -35,7 +44,9 @@ public class SipcClientContext {
         return this.handshakeFuture;
     }
 
-    public void onHandshakeComplete() {
+    public void onHandshakeComplete(Channel ch) {
+        ch.pipeline().addLast(this.channelHandler);
+
         handshakeFuture.setSuccess();
     }
 

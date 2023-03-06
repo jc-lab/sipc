@@ -6,11 +6,11 @@ import io.netty.channel.ChannelInitializer;
 import kr.jclab.sipc.internal.PacketCoder;
 import kr.jclab.sipc.internal.InactiveHandler;
 import kr.jclab.sipc.internal.noise.*;
-import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.SipcChild;
 import lombok.extern.slf4j.Slf4j;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @ChannelHandler.Sharable
@@ -32,25 +32,26 @@ public abstract class ServerChannelInitializer<C extends Channel> extends Channe
             }
         }));
 
-        NoiseNXHandshake handshake = new NoiseNXHandshake(NoiseRole.RESPONDER, new NoiseHandler() {
+        NoiseHandshakeChannelHandler handshake = new NoiseHandshakeChannelHandler(NoiseRole.RESPONDER, new NoiseHandler() {
             @Override
-            public void onReadMessage(NoiseNXHandshake handshake, byte[] payload) {
-                if (sipcChildChannelContext.getState() == SipcChildChannelContext.HandshakeState.HANDSHAKEING_1) {
-                    try {
-                        SipcProto.ClientHelloPayload clientHelloPayload = SipcProto.ClientHelloPayload.newBuilder()
-                                .mergeFrom(payload)
-                                .build();
-                        sipcChildChannelContext.onClientHello(clientHelloPayload);
-                    } catch (Exception e) {
-                        sipcChildChannelContext.onHandshakeFailure();
-                        throw new NoiseHandshakeException(e);
-                    }
+            public CompletableFuture<Boolean> onReadMessage(NoiseHandshakeChannelHandler handshake, byte[] payload) {
+                if (payload != null && sipcChildChannelContext.getState() == SipcChildChannelContext.HandshakeState.HANDSHAKEING_1) {
+                    return sipcChildChannelContext.onClientHello(payload);
                 }
+
+                CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+                completableFuture.complete(true);
+                return completableFuture;
             }
 
             @Override
-            public void onHandshakeComplete(NoiseNXHandshake handshake, NoiseSecureChannelSession session) {
+            public void onHandshakeComplete(NoiseHandshakeChannelHandler handshake, NoiseSecureChannelSession session) {
                 sipcChildChannelContext.noiseHandshakeComplete(ch);
+            }
+
+            @Override
+            public void onHandshakeFailed(NoiseHandshakeChannelHandler handshake, Throwable e) {
+                sipcChildChannelContext.onHandshakeFailure();
             }
         });
 
@@ -59,6 +60,6 @@ public abstract class ServerChannelInitializer<C extends Channel> extends Channe
 
         ch.pipeline().addLast(new PacketCoder.Encoder());
         ch.pipeline().addLast(new PacketCoder.Decoder());
-        ch.pipeline().addLast(NoiseNXHandshake.HANDLER_NAME, handshake);
+        ch.pipeline().addLast(NoiseHandshakeChannelHandler.HANDLER_NAME, handshake);
     }
 }

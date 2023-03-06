@@ -1,13 +1,19 @@
 package kr.jclab.sipc.internal.noise;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface NoiseHandler {
-    default byte[] getInitiatorMessage() {
+    default byte[] beforeWriteMessage(NoiseHandshakeChannelHandler handshake) {
         return null;
     }
 
-    default void onReadMessage(NoiseNXHandshake handshake, byte[] payload) {}
+    default CompletableFuture<Boolean> onReadMessage(NoiseHandshakeChannelHandler handshake, byte[] payload) {
+        CompletableFuture<Boolean> completableFuture = new CompletableFuture<>();
+        completableFuture.complete(true);
+        return completableFuture;
+    }
 
-    default void onHandshakeComplete(NoiseNXHandshake handshake, NoiseSecureChannelSession session) {}
+    default void onHandshakeComplete(NoiseHandshakeChannelHandler handshake, NoiseSecureChannelSession session) {}
 
-    default void onHandshakeFailed(NoiseNXHandshake handshake, Throwable e) {}
+    default void onHandshakeFailed(NoiseHandshakeChannelHandler handshake, Throwable e) {}
 }

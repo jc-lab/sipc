@@ -13,9 +13,10 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.ShortBufferException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
-public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
+public class NoiseHandshakeChannelHandler extends SimpleChannelInboundHandler<ByteBuf> {
     public static final String HANDLER_NAME = "noiseHandshake";
 
     private final NoiseRole role;
@@ -25,10 +26,10 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
     private final HandshakeState handshakeState;
     private boolean activated = false;
 
-    public NoiseNXHandshake(NoiseRole role, NoiseHandler noiseHandler) throws NoSuchAlgorithmException {
+    public NoiseHandshakeChannelHandler(NoiseRole role, NoiseHandler noiseHandler) throws NoSuchAlgorithmException {
         this.role = role;
         this.noiseHandler = noiseHandler;
-        this.handshakeState = new HandshakeState("Noise_NX_25519_ChaChaPoly_SHA256", role.getValue());
+        this.handshakeState = new HandshakeState("Noise_XK_25519_ChaChaPoly_SHA256", role.getValue());
     }
 
     public void start() {
@@ -40,7 +41,7 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
         if (!this.activated) {
             this.activated = true;
             if (this.role == NoiseRole.INITIATOR) {
-                sendNoiseMessage(ctx, this.noiseHandler.getInitiatorMessage());
+                sendNoiseMessage(ctx, this.noiseHandler.beforeWriteMessage(this));
             }
         }
     }
@@ -49,11 +50,16 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
         channelActive(ctx);
 
+        CompletableFuture<Boolean> completableFuture;
+
         // we always read from the wire when it's the next action to take
         // capture any payloads
         if (handshakeState.getAction() == HandshakeState.READ_MESSAGE) {
             byte[] payload = readNoiseMessage(ByteBufUtils.toByteArray(msg));
-            noiseHandler.onReadMessage(this, payload);
+            completableFuture = noiseHandler.onReadMessage(this, payload);
+        } else {
+            completableFuture = new CompletableFuture<>();
+            completableFuture.complete(true);
         }
 
 //        // verify the signature of the remote's noise static public key once
@@ -66,14 +72,28 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
 //            }
 //        }
 
-        // after reading messages and setting up state, write next message onto the wire
-        if (handshakeState.getAction() == HandshakeState.WRITE_MESSAGE) {
-            sendNoiseMessage(ctx, null);
-        }
+        completableFuture
+                .whenComplete((accept, ex) -> {
+                    if (ex != null) {
+                        ctx.fireExceptionCaught(ex);
+                        return ;
+                    }
+                    if (!accept) {
+                        ctx.fireExceptionCaught(new RuntimeException("handshake rejected"));
+                        return ;
+                    }
 
-        if (handshakeState.getAction() == HandshakeState.SPLIT) {
-            splitHandshake(ctx);
-        }
+                    // after reading messages and setting up state, write next message onto the wire
+                    if (handshakeState.getAction() == HandshakeState.WRITE_MESSAGE) {
+                        if (!sendNoiseMessage(ctx, this.noiseHandler.beforeWriteMessage(this))) {
+                            return ;
+                        }
+                    }
+
+                    if (handshakeState.getAction() == HandshakeState.SPLIT) {
+                        splitHandshake(ctx);
+                    }
+                });
     }
 
     @Override
@@ -104,16 +124,23 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
         return null;
     }
 
-    private void sendNoiseMessage(ChannelHandlerContext ctx, byte[] msg) throws ShortBufferException {
+    private boolean sendNoiseMessage(ChannelHandlerContext ctx, byte[] msg) {
         int msgLength = (msg != null) ? msg.length : 0;
         int localKeyPairSize = handshakeState.hasLocalKeyPair() ? handshakeState.getLocalKeyPair().getPrivateKeyLength() : 0;
         byte[] outputBuffer = new byte[msgLength + (2 * (localKeyPairSize + 16))]; // 16 is MAC length
-        int outputLength = handshakeState.writeMessage(outputBuffer, 0, msg, 0, msgLength);
+        int outputLength = 0;
+        try {
+            outputLength = handshakeState.writeMessage(outputBuffer, 0, msg, 0, msgLength);
 
-        log.debug("Noise handshake WRITE_MESSAGE");
-        log.trace("Sent message length:" + outputLength);
+            log.debug("Noise handshake WRITE_MESSAGE");
+            log.trace("Sent message length:" + outputLength);
 
-        ctx.writeAndFlush(Unpooled.wrappedBuffer(Arrays.copyOfRange(outputBuffer, 0, outputLength)));
+            ctx.writeAndFlush(Unpooled.wrappedBuffer(Arrays.copyOfRange(outputBuffer, 0, outputLength)));
+            return true;
+        } catch (ShortBufferException e) {
+            ctx.fireExceptionCaught(e);
+        }
+        return false;
     }
 
 //    private void verifyPayload(
@@ -158,9 +185,12 @@ public class NoiseNXHandshake extends SimpleChannelInboundHandler<ByteBuf> {
                 );
         ctx.pipeline().remove(this);
 
-        noiseHandler.onHandshakeComplete(this, session);
-
-        ctx.fireChannelActive();
+        try {
+            noiseHandler.onHandshakeComplete(this, session);
+            ctx.fireChannelActive();
+        } catch (Exception e) {
+            ctx.fireExceptionCaught(e);
+        }
     }
 
     private void handshakeFailed(ChannelHandlerContext ctx, String cause) {
