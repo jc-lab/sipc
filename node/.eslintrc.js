@@ -24,7 +24,8 @@ module.exports = {
   ignorePatterns: [
     '**/lib/**',
     '**/dist/**',
-    '**/node_modules/**'
+    '**/node_modules/**',
+    'src/proto/*.d.ts'
   ],
   rules: {
     '@typescript-eslint/no-unused-vars': 'off',

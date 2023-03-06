@@ -9,7 +9,7 @@
     "lint:test": "eslint ./src/**/*.ts",
     "lint:fix": "eslint --fix ./src/**/*.ts",
     "generate:proto": "node gen-proto.js",
-    "dev": "ts-node dev/app.ts"
+    "test": ""
   },
   "files": [
     "LICENSE",
