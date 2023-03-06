@@ -20,7 +20,9 @@ jobs:
       - name: Set version
         run: node ./.ci/node-set-version.js --package-json node/package.json ${{ env.package_version }}
       - name: Install dependencies
-        run: yarn install
+        run: |
+          cd node
+          yarn install
       - name: Build
         run: |
           cd node
