@@ -32,6 +32,7 @@ type SipcClient struct {
 
 	HandshakeTimeout time.Duration
 
+	localStaticKey noise.DHKey
 	state          State
 	transport      transport.Transport
 	connection     net.Conn
@@ -53,6 +54,13 @@ func NewSipcClientWithAllowRemote(connectInfo string, allowRemote bool) (*SipcCl
 		state:            kStateIdle,
 		readBuffer:       bytes.NewBuffer(make([]byte, 1024)),
 	}
+
+	localStaticKey, err := noise.DH25519.GenerateKeypair(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	client.localStaticKey = localStaticKey
+
 	connectInfoBinary, err := base64.URLEncoding.DecodeString(connectInfo)
 	if err != nil {
 		return nil, err
@@ -110,10 +118,12 @@ func (client *SipcClient) Start() error {
 	//	return err
 	//}
 	handshakeState, err := noise.NewHandshakeState(noise.Config{
-		CipherSuite: cs,
-		Random:      rand.Reader,
-		Pattern:     noise.HandshakeNX,
-		Initiator:   true,
+		CipherSuite:   cs,
+		Random:        rand.Reader,
+		Pattern:       noise.HandshakeXK,
+		Initiator:     true,
+		StaticKeypair: client.localStaticKey,
+		PeerStatic:    client.connectInfo.PublicKey,
 	})
 	if err != nil {
 		return err
@@ -170,12 +180,6 @@ func (client *SipcClient) Start() error {
 			}
 
 			payload, complete = handshakeResultCheck(handshakeState.ReadMessage(nil, readBuf))
-			if complete != -1 {
-				if !bytes.Equal(handshakeState.PeerStatic(), client.connectInfo.PublicKey) {
-					client.handshakeCh <- errors.New("illegal remote key")
-					break
-				}
-			}
 			if complete != 0 {
 				break
 			}

@@ -115,7 +115,7 @@ func (server *SipcServer) childHandshake(conn net.Conn) {
 	handshakeState, err := noise.NewHandshakeState(noise.Config{
 		CipherSuite:   cs,
 		Random:        rand.Reader,
-		Pattern:       noise.HandshakeNX,
+		Pattern:       noise.HandshakeXK,
 		Initiator:     false,
 		StaticKeypair: server.localStaticKey,
 	})
