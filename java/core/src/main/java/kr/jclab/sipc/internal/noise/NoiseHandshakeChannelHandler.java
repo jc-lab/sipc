@@ -75,11 +75,11 @@ public class NoiseHandshakeChannelHandler extends SimpleChannelInboundHandler<By
         completableFuture
                 .whenComplete((accept, ex) -> {
                     if (ex != null) {
-                        ctx.fireExceptionCaught(ex);
+                        handshakeFailed(ctx, ex);
                         return ;
                     }
                     if (!accept) {
-                        ctx.fireExceptionCaught(new RuntimeException("handshake rejected"));
+                        handshakeFailed(ctx, "handshake rejected");
                         return ;
                     }
 
@@ -138,7 +138,7 @@ public class NoiseHandshakeChannelHandler extends SimpleChannelInboundHandler<By
             ctx.writeAndFlush(Unpooled.wrappedBuffer(Arrays.copyOfRange(outputBuffer, 0, outputLength)));
             return true;
         } catch (ShortBufferException e) {
-            ctx.fireExceptionCaught(e);
+            handshakeFailed(ctx, e);
         }
         return false;
     }
@@ -198,8 +198,11 @@ public class NoiseHandshakeChannelHandler extends SimpleChannelInboundHandler<By
     }
 
     private void handshakeFailed(ChannelHandlerContext ctx, Throwable cause) {
-        noiseHandler.onHandshakeFailed(this, cause);
-        log.warn("Noise handshake failed", cause);
-        ctx.pipeline().remove(this);
+        try {
+            log.warn("Noise handshake failed", cause);
+            noiseHandler.onHandshakeFailed(this, cause);
+        } finally {
+            ctx.channel().close();
+        }
     }
 }
