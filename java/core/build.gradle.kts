@@ -19,10 +19,6 @@ java {
     withSourcesJar()
 }
 
-val nettyVersion = "4.1.87.Final"
-val projectProtobufVersion = "3.19.4"
-val nettyIocpVersion = "0.0.3"
-
 dependencies {
     testCompileOnly("org.projectlombok:lombok:1.18.24")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.24")
@@ -34,17 +30,17 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.24")
     annotationProcessor("org.projectlombok:lombok:1.18.24")
 
-    api("io.netty:netty-buffer:${nettyVersion}")
-    api("io.netty:netty-codec:${nettyVersion}")
-    api("io.netty:netty-common:${nettyVersion}")
-    api("io.netty:netty-handler:${nettyVersion}")
-    api("io.netty:netty-transport:${nettyVersion}")
-    api("io.netty:netty-transport-native-unix-common:${nettyVersion}")
-    api("io.netty:netty-transport-native-epoll:${nettyVersion}")
-    api("io.netty:netty-transport-native-kqueue:${nettyVersion}")
-    api("kr.jclab.netty:netty-transport-classes-iocp:${nettyIocpVersion}")
+    api("io.netty:netty-buffer:${Version.NETTY}")
+    api("io.netty:netty-codec:${Version.NETTY}")
+    api("io.netty:netty-common:${Version.NETTY}")
+    api("io.netty:netty-handler:${Version.NETTY}")
+    api("io.netty:netty-transport:${Version.NETTY}")
+    api("io.netty:netty-transport-native-unix-common:${Version.NETTY}")
+    api("io.netty:netty-transport-native-epoll:${Version.NETTY}")
+    api("io.netty:netty-transport-native-kqueue:${Version.NETTY}")
+    api("kr.jclab.netty:netty-transport-classes-iocp:${Version.NETTY_IOCP}")
 
-    implementation("com.google.protobuf:protobuf-java:${projectProtobufVersion}")
+    implementation("com.google.protobuf:protobuf-java:${Version.PROTOBUF}")
     implementation("com.google.guava:guava:31.1-jre")
     implementation("kr.jclab:noise-java:0.0.1")
     implementation("org.slf4j:slf4j-api:2.0.6")
@@ -55,16 +51,16 @@ dependencies {
     testImplementation("org.slf4j:slf4j-simple:2.0.6")
     testImplementation("net.java.dev.jna:jna:5.13.0")
     testImplementation("net.java.dev.jna:jna-platform:5.13.0")
-    testImplementation("io.netty:netty-transport-native-epoll:${nettyVersion}:linux-x86_64")
-    testImplementation("io.netty:netty-transport-native-epoll:${nettyVersion}:linux-aarch_64")
-    testImplementation("io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-x86_64")
-    testImplementation("io.netty:netty-transport-native-kqueue:${nettyVersion}:osx-aarch_64")
-    testImplementation("kr.jclab.netty:netty-transport-native-iocp:${nettyIocpVersion}")
+    testImplementation("io.netty:netty-transport-native-epoll:${Version.NETTY}:linux-x86_64")
+    testImplementation("io.netty:netty-transport-native-epoll:${Version.NETTY}:linux-aarch_64")
+    testImplementation("io.netty:netty-transport-native-kqueue:${Version.NETTY}:osx-x86_64")
+    testImplementation("io.netty:netty-transport-native-kqueue:${Version.NETTY}:osx-aarch_64")
+    testImplementation("kr.jclab.netty:netty-transport-native-iocp:${Version.NETTY_IOCP}")
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${projectProtobufVersion}"
+        artifact = "com.google.protobuf:protoc:${Version.PROTOBUF}"
     }
 }
 
