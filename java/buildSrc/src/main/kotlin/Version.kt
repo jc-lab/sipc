@@ -25,7 +25,7 @@ fun getVersionFromGit(): String {
 object Version {
     val KOTLIN by lazy { "1.7.21" }
     val NETTY by lazy { "4.1.87.Final" }
-    val NETTY_IOCP by lazy { "0.0.3" }
+    val NETTY_IOCP by lazy { "0.0.4" }
     val PROTOBUF by lazy { "3.19.4" }
 
     val PROJECT by lazy { getVersionFromGit() }
