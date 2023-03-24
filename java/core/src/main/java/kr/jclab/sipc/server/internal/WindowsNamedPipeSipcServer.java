@@ -55,7 +55,7 @@ public class WindowsNamedPipeSipcServer extends SipcServer {
         serverContext.setAllowReconnect(allowReconnect);
 
         this.serverChannel = (NamedPipeServerChannel) new ServerBootstrap()
-                .group(eventLoopHolder.getBoss(), eventLoopHolder.getWorker())
+                .group(eventLoopHolder.getWorker())
                 .channel(NamedPipeServerChannel.class)
                     .childHandler(new NamedPipeServerChannelInitializer(serverContext))
                 .bind(localAddress)
