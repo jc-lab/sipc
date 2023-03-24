@@ -54,7 +54,6 @@ public class SipcChild {
         start();
 
         CompletableFuture<Process> onExit = Process9Helper.onExitIfAvailable(process);
-        System.out.println("onExit : " + onExit);
         if (onExit != null) {
             onExit.whenComplete((proc, ex) -> {
                 if (ex != null) {
