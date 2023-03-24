@@ -157,18 +157,16 @@ func (client *SipcClient) Start() error {
 			return
 		}
 		for {
-			payload, complete := handshakeResultCheck(handshakeState.WriteMessage(nil, writeBuf))
+			payload, cs1, cs2, err := handshakeState.WriteMessage(nil, writeBuf)
 			writeBuf = nil
-			if payload != nil {
+			if err == nil && payload != nil {
 				err = util.WritePacket(conn, payload)
-				if err != nil {
-					client.handshakeCh <- err
-					break
-				}
 			}
+			payload, complete := handshakeResultCheck(payload, cs1, cs2, err)
 			if complete != 0 {
 				break
 			}
+
 			readBuf, err := util.ReadPacket(conn)
 			if err != nil {
 				client.handshakeCh <- err
