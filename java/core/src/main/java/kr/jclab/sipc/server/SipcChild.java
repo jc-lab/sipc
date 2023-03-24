@@ -6,13 +6,16 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import kr.jclab.sipc.exception.SipcHandshakeTimeoutException;
 import kr.jclab.sipc.exception.NotYetConnectedException;
+import kr.jclab.sipc.exception.SipcProcessDeadException;
 import kr.jclab.sipc.internal.DeferredInt;
 import kr.jclab.sipc.internal.PidAccessor;
+import kr.jclab.sipc.internal.Process9Helper;
 import kr.jclab.sipc.proto.SipcProto;
 import kr.jclab.sipc.server.internal.SipcChildChannelContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import javax.annotation.Nullable;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -49,6 +52,18 @@ public class SipcChild {
         this.process = process;
         this.pid.set((int) PidAccessor.getPid(process, this.parent.serverContext.getWindowsNativeSupport()));
         start();
+
+        CompletableFuture<Process> onExit = Process9Helper.onExitIfAvailable(process);
+        System.out.println("onExit : " + onExit);
+        if (onExit != null) {
+            onExit.whenComplete((proc, ex) -> {
+                if (ex != null) {
+                    onProcessDead(ex);
+                } else {
+                    onProcessDead();
+                }
+            });
+        }
     }
 
     public void attachProcess(int pid) {
@@ -76,19 +91,53 @@ public class SipcChild {
         }
     }
 
-    private synchronized void onHandshakeTimeout() {
-        if (this.childChannelContext != null) {
-            return;
+    public synchronized void onProcessDead() {
+        if (this.childChannelContext == null) {
+            handshakeFailure(new SipcProcessDeadException());
+        } else {
+            remove(null);
         }
+    }
 
+    public synchronized void onProcessDead(Throwable e) {
+        if (this.childChannelContext == null) {
+            handshakeFailure(new SipcProcessDeadException(e));
+        } else {
+            remove(e);
+        }
+    }
+
+    private synchronized void onHandshakeTimeout() {
+        handshakeFailure(new SipcHandshakeTimeoutException());
+    }
+
+    private synchronized void handshakeFailure(Throwable cause) {
+        try {
+            if (this.childChannelContext != null) {
+                return;
+            }
+
+            if (handshakeTimeoutFuture != null) {
+                handshakeTimeoutFuture.cancel(false);
+            }
+
+            if (!handshakeFuture.isDone()) {
+                handshakeFuture.completeExceptionally(cause);
+            }
+
+            if (this.channelHandler instanceof SipcServerChannelHandler) {
+                ((SipcServerChannelHandler) this.channelHandler).onHandshakeFailed(this, cause);
+            }
+        } finally {
+            remove(cause);
+        }
+    }
+
+    private synchronized void remove(@Nullable Throwable cause) {
         parent.serverContext.removeChild(connectInfo.getConnectionId());
 
-        if (!handshakeFuture.isDone()) {
-            handshakeFuture.completeExceptionally(new SipcHandshakeTimeoutException());
-        }
-
         if (this.channelHandler instanceof SipcServerChannelHandler) {
-            ((SipcServerChannelHandler) this.channelHandler).onHandshakeTimeout(this);
+            ((SipcServerChannelHandler) this.channelHandler).onRemoved(this, cause);
         }
     }
 
