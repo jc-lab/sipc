@@ -34,14 +34,20 @@ public class SipcServerContext {
     @Setter
     private boolean allowReconnect = false;
 
+    @Getter
+    private final boolean disablePidCheck;
+
     private ScheduledFuture<?> handshakeTimer = null;
 
     public SipcServerContext(
             EventLoopHolder eventLoopHolder,
             DHState localPrivateKey,
             SipcProto.TransportType transportType,
-            WindowsNativeSupport windowsNativeSupport
+            WindowsNativeSupport windowsNativeSupport,
+            boolean disablePidCheck
     ) throws NoSuchAlgorithmException {
+        this.disablePidCheck = disablePidCheck;
+
         this.eventLoopHolder = eventLoopHolder;
         if (localPrivateKey == null) {
             localPrivateKey = Noise.createDH("25519");

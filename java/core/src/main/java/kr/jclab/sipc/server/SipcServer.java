@@ -50,7 +50,8 @@ public abstract class SipcServer {
             SocketAddress localAddress,
             int handshakeTimeoutMilliseconds,
             boolean allowReconnect,
-            WindowsNativeSupport windowsNativeSupport
+            WindowsNativeSupport windowsNativeSupport,
+            boolean disablePidCheck
     ) throws NoSuchAlgorithmException {
         EventLoopHolder eventLoopHolder = new EventLoopHolder();
 
@@ -72,7 +73,8 @@ public abstract class SipcServer {
                     localAddress,
                     handshakeTimeoutMilliseconds,
                     allowReconnect,
-                    windowsNativeSupport
+                    windowsNativeSupport,
+                    disablePidCheck
             );
         } else {
             if (localAddress == null) {
@@ -85,7 +87,8 @@ public abstract class SipcServer {
                     localPrivateKey,
                     localAddress,
                     handshakeTimeoutMilliseconds,
-                    allowReconnect
+                    allowReconnect,
+                    disablePidCheck
             );
         }
     }

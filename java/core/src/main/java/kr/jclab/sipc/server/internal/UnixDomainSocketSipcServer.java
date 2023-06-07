@@ -30,14 +30,16 @@ public class UnixDomainSocketSipcServer extends SipcServer {
             DHState localPrivateKey,
             SocketAddress localAddress,
             int handshakeTimeoutMilliseconds,
-            boolean allowReconnect
+            boolean allowReconnect,
+            boolean disablePidCheck
     ) throws NoSuchAlgorithmException {
         super(
                 new SipcServerContext(
                         eventLoopHolder,
                         localPrivateKey,
                         SipcProto.TransportType.kUnixDomainSocket,
-                        null
+                        null,
+                        disablePidCheck
                 )
         );
 

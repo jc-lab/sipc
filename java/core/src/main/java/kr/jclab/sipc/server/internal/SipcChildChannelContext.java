@@ -55,24 +55,10 @@ public class SipcChildChannelContext {
 
             int expectedPid = this.sipcChild.getPid().get();
             if (expectedPid != 0) {
-                if (expectedPid == pid) {
-                    this.verified = true;
-                    completableFuture.complete(true);
-                } else {
-                    completableFuture.completeExceptionally(new InvalidConnectionInfoException());
-                }
+                checkPid(completableFuture, expectedPid);
             } else {
                 this.sipcChild.getPid().compute((updatedPid) -> {
-                    if (updatedPid == pid) {
-                        try {
-                            this.verified = true;
-                            completableFuture.complete(true);
-                        } catch (Exception e) {
-                            completableFuture.completeExceptionally(e);
-                        }
-                    } else {
-                        completableFuture.completeExceptionally(new InvalidConnectionInfoException());
-                    }
+                    checkPid(completableFuture, updatedPid);
                 });
             }
             return completableFuture;
@@ -80,6 +66,19 @@ public class SipcChildChannelContext {
             completableFuture.completeExceptionally(e);
         }
         return completableFuture;
+    }
+
+    private void checkPid(CompletableFuture<Boolean> completableFuture, int expectedPid) {
+        if (this.serverContext.isDisablePidCheck() || expectedPid == pid) {
+            this.verified = true;
+            try {
+                completableFuture.complete(true);
+            } catch (Exception e) {
+                completableFuture.completeExceptionally(e);
+            }
+        } else {
+            completableFuture.completeExceptionally(new InvalidConnectionInfoException());
+        }
     }
 
     public void noiseHandshakeComplete(Channel channel) {

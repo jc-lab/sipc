@@ -32,14 +32,16 @@ public class WindowsNamedPipeSipcServer extends SipcServer {
             SocketAddress localAddress,
             int handshakeTimeoutMilliseconds,
             boolean allowReconnect,
-            WindowsNativeSupport windowsNativeSupport
+            WindowsNativeSupport windowsNativeSupport,
+            boolean disablePidCheck
     ) throws NoSuchAlgorithmException {
         super(
                 new SipcServerContext(
                         eventLoopHolder,
                         localPrivateKey,
                         SipcProto.TransportType.kWindowsNamedPipe,
-                        windowsNativeSupport
+                        windowsNativeSupport,
+                        disablePidCheck
                 )
         );
 
