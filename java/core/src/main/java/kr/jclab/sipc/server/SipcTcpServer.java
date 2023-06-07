@@ -36,7 +36,8 @@ public class SipcTcpServer extends SipcServer {
                         eventLoopHolder,
                         localPrivateKey,
                         SipcProto.TransportType.kTcp,
-                        null
+                        null,
+                        true
                 )
         );
 
