@@ -35,9 +35,9 @@ dependencies {
     api("io.netty:netty-common:${Version.NETTY}")
     api("io.netty:netty-handler:${Version.NETTY}")
     api("io.netty:netty-transport:${Version.NETTY}")
-    api("io.netty:netty-transport-native-unix-common:${Version.NETTY}")
-    api("io.netty:netty-transport-native-epoll:${Version.NETTY}")
-    api("io.netty:netty-transport-native-kqueue:${Version.NETTY}")
+    api("io.netty:netty-transport-classes-unix-common:${Version.NETTY}")
+    api("io.netty:netty-transport-classes-epoll:${Version.NETTY}")
+    api("io.netty:netty-transport-classes-kqueue:${Version.NETTY}")
     api("kr.jclab.netty:netty-transport-classes-iocp:${Version.NETTY_IOCP}")
 
     implementation("com.google.protobuf:protobuf-java:${Version.PROTOBUF}")
