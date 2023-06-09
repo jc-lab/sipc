@@ -7,6 +7,7 @@ import (
 	"github.com/jc-lab/sipc/go/sipc_proto"
 	"github.com/jc-lab/sipc/go/transport"
 	"github.com/jc-lab/sipc/go/util"
+	"golang.org/x/crypto/curve25519"
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
@@ -17,6 +18,7 @@ import (
 type SipcServer struct {
 	handshakeTimeout time.Duration
 	allowReconnect   bool
+	disablePidCheck  bool
 	transport        transport.Transport
 	listener         net.Listener
 	localStaticKey   noise.DHKey
@@ -30,6 +32,7 @@ type SipcServerConfig struct {
 	HandshakeTimeout time.Duration
 	Transport        transport.Transport
 	AllowReconnect   bool
+	DisablePidCheck  bool
 }
 
 func NewSipcServer(config SipcServerConfig) (*SipcServer, error) {
@@ -52,11 +55,21 @@ func NewSipcServer(config SipcServerConfig) (*SipcServer, error) {
 		server.transport = t
 	}
 
-	localStaticKey, err := noise.DH25519.GenerateKeypair(rand.Reader)
-	if err != nil {
-		return nil, err
+	server.disablePidCheck = config.DisablePidCheck
+
+	if config.LocalPrivateKey != nil {
+		pubkey, err := curve25519.X25519(config.LocalPrivateKey, curve25519.Basepoint)
+		if err != nil {
+			return nil, err
+		}
+		server.localStaticKey = noise.DHKey{Private: config.LocalPrivateKey, Public: pubkey}
+	} else {
+		localStaticKey, err := noise.DH25519.GenerateKeypair(rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+		server.localStaticKey = localStaticKey
 	}
-	server.localStaticKey = localStaticKey
 
 	listener, err := server.transport.Listen(server.transport.NewDefaultPath())
 	if err != nil {
@@ -186,14 +199,16 @@ func (server *SipcServer) childHandshake(conn net.Conn) {
 				break
 			}
 
-			pidPointer, ok := sipcClient.pidPromise.Wait(server.handshakeTimeout)
-			if ok {
-				if *pidPointer != peerCred.Pid {
-					handleError(errors.New("not matched peer pid"))
-					break
+			if !server.disablePidCheck {
+				pidPointer, ok := sipcClient.pidPromise.Wait(server.handshakeTimeout)
+				if ok {
+					if *pidPointer != peerCred.Pid {
+						handleError(errors.New("not matched peer pid"))
+						break
+					}
+				} else {
+					handleError(errors.New("timeout"))
 				}
-			} else {
-				handleError(errors.New("timeout"))
 			}
 		}
 
