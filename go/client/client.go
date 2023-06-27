@@ -194,7 +194,7 @@ func (client *SipcClient) Start() error {
 
 func (client *SipcClient) Read(p []byte) (int, error) {
 	if client.state != kStateEstablished {
-		return -1, sipc_error.NOT_CONNECTED
+		return 0, sipc_error.NOT_CONNECTED
 	}
 
 	n, err := util.BufferedRead(client.readBuffer, p, func() ([]byte, error) {
@@ -212,7 +212,7 @@ func (client *SipcClient) Read(p []byte) (int, error) {
 
 func (client *SipcClient) Write(p []byte) (n int, err error) {
 	if client.state != kStateEstablished {
-		return -1, sipc_error.NOT_CONNECTED
+		return 0, sipc_error.NOT_CONNECTED
 	}
 
 	ct, err := client.csClient.Encrypt(nil, nil, p)
