@@ -215,16 +215,22 @@ func (client *SipcClient) Write(p []byte) (n int, err error) {
 		return 0, sipc_error.NOT_CONNECTED
 	}
 
-	ct, err := client.csClient.Encrypt(nil, nil, p)
+	err = util.Chunk(p, 65470, func(chunk []byte) error {
+		ct, err := client.csClient.Encrypt(nil, nil, chunk)
+		if err != nil {
+			return err
+		}
+
+		err = util.WritePacket(client.connection, ct)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return 0, err
 	}
-
-	err = util.WritePacket(client.connection, ct)
-	if err != nil {
-		return 0, err
-	}
-
 	return len(p), nil
 }
 

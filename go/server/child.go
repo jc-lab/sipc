@@ -170,12 +170,19 @@ func (child *SipcChild) Write(p []byte) (n int, err error) {
 		return 0, sipc_error.NOT_CONNECTED
 	}
 
-	ct, err := child.csServer.Encrypt(nil, nil, p)
-	if err != nil {
-		return 0, err
-	}
+	err = util.Chunk(p, 65470, func(chunk []byte) error {
+		ct, err := child.csServer.Encrypt(nil, nil, chunk)
+		if err != nil {
+			return err
+		}
 
-	err = util.WritePacket(child.connection, ct)
+		err = util.WritePacket(child.connection, ct)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return 0, err
 	}
