@@ -13,9 +13,9 @@ import (
 	"syscall"
 )
 
-type DomainSocketTransport struct {
-	Transport
-}
+type DomainSocketTransport struct{}
+
+var _ Transport = (*DomainSocketTransport)(nil)
 
 func GetDefaultTransportType() sipc_proto.TransportType {
 	return sipc_proto.TransportType_kUnixDomainSocket
@@ -55,10 +55,11 @@ func (t *DomainSocketTransport) GetPeerCredentials(conn net.Conn) (*PeerCredenti
 		return nil, errors.New("invalid connection")
 	}
 
-	f, err := unixConn.File()
+	f, err := unixConn.File() // c.fd.dup()
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 
 	cred, err := syscall.GetsockoptUcred(int(f.Fd()), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
 	if err != nil {

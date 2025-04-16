@@ -12,9 +12,9 @@ import (
 	"net"
 )
 
-type DomainSocketTransport struct {
-	Transport
-}
+type DomainSocketTransport struct{}
+
+var _ Transport = (*DomainSocketTransport)(nil)
 
 func GetDefaultTransportType() sipc_proto.TransportType {
 	return sipc_proto.TransportType_kUnixDomainSocket
@@ -58,6 +58,7 @@ func (t *DomainSocketTransport) GetPeerCredentials(conn net.Conn) (*PeerCredenti
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 
 	pid, err := unix.GetsockoptInt(int(f.Fd()), unix.SOL_LOCAL, unix.LOCAL_PEERPID)
 	if err != nil {

@@ -6,9 +6,9 @@ import (
 	"net"
 )
 
-type TcpTransport struct {
-	Transport
-}
+type TcpTransport struct{}
+
+var _ Transport = (*TcpTransport)(nil)
 
 func NewTcpTransport() *TcpTransport {
 	return &TcpTransport{}

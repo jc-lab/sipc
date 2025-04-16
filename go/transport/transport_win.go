@@ -21,9 +21,9 @@ var (
 	getNamedPipeClientProcessId = modkernel32.NewProc("GetNamedPipeClientProcessId")
 )
 
-type NamedPipeTransport struct {
-	Transport
-}
+type NamedPipeTransport struct{}
+
+var _ Transport = (*NamedPipeTransport)(nil)
 
 func GetDefaultTransportType() sipc_proto.TransportType {
 	return sipc_proto.TransportType_kWindowsNamedPipe
