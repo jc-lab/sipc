@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"github.com/jc-lab/sipc/go/sipc_proto"
 	"net"
 )
@@ -19,6 +20,11 @@ func (t *TcpTransport) TransportType() sipc_proto.TransportType {
 
 func (t *TcpTransport) Connect(path string) (net.Conn, error) {
 	return net.Dial("tcp", path)
+}
+
+func (t *TcpTransport) ConnectContext(ctx context.Context, path string) (net.Conn, error) {
+	dialer := &net.Dialer{}
+	return dialer.DialContext(ctx, "tcp", path)
 }
 
 func (t *TcpTransport) Listen(path string) (net.Listener, error) {

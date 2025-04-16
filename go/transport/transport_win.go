@@ -4,6 +4,7 @@
 package transport
 
 import (
+	"context"
 	"errors"
 	"github.com/Microsoft/go-winio"
 	"github.com/google/uuid"
@@ -11,6 +12,7 @@ import (
 	"github.com/jc-lab/sipc/go/sipc_proto"
 	"net"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -39,7 +41,21 @@ func (t *NamedPipeTransport) TransportType() sipc_proto.TransportType {
 }
 
 func (t *NamedPipeTransport) Connect(path string) (net.Conn, error) {
-	return winio.DialPipe(path, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	return t.ConnectContext(ctx, path)
+}
+
+func (t *NamedPipeTransport) ConnectContext(ctx context.Context, path string) (net.Conn, error) {
+	if ctx.Err() == nil {
+		c, err := winio.DialPipeContext(ctx, path)
+		if err == nil {
+			return c, nil
+		} else if !errors.Is(err, winio.ErrTimeout) {
+			return c, err
+		}
+	}
+	return nil, ctx.Err()
 }
 
 func (t *NamedPipeTransport) Listen(path string) (net.Listener, error) {

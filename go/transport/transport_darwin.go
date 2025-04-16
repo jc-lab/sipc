@@ -35,6 +35,11 @@ func (t *DomainSocketTransport) Connect(path string) (net.Conn, error) {
 	return net.Dial("unix", path)
 }
 
+func (t *DomainSocketTransport) ConnectContext(ctx context.Context, path string) (net.Conn, error) {
+	dialer := &net.Dialer{}
+	return dialer.DialContext(ctx, "unix", path)
+}
+
 func (t *DomainSocketTransport) Listen(path string) (net.Listener, error) {
 	return net.Listen("unix", path)
 }
